@@ -1,3 +1,3 @@
-meteor_width = 30
-meteor_height = 30
-meteors=[]
+meteor_width = 60
+meteor_height = 60
+meteors = []

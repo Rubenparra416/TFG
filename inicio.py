@@ -7,10 +7,10 @@ try:
     from clases import personaje, variables, meteoritos, enemigos
 except ModuleNotFoundError:
     sys.path.append(str(Path(__file__).resolve().parent))
-    import personaje
-    import variables
-    import meteoritos
-    import enemigos
+    import clases.personaje
+    import clases.variables
+    import clases.meteoritos
+    import clases.enemigos
 
 pygame.init()
 variables.font = pygame.font.SysFont(None, 36)

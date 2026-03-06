@@ -1,20 +1,16 @@
 import pygame
 import random
-import clases.personaje as personaje 
-import clases.variables as variables 
-import clases.meteoritos as meteoritos 
-import clases.enemigos as enemigos 
-import sys
-
 import sys
 from pathlib import Path
-
 
 try:
     from clases import personaje, variables, meteoritos, enemigos
 except ModuleNotFoundError:
-    # Permite ejecutar este archivo directamente desde /clases
-    sys.path.append(str(Path(__file__).parent))
+    sys.path.append(str(Path(__file__).resolve().parent))
+    import personaje
+    import variables
+    import meteoritos
+    import enemigos
 
 pygame.init()
 variables.font = pygame.font.SysFont(None, 36)
@@ -45,17 +41,12 @@ GAME_OVER_MUSIC_FILES = [
     "assets/musica/imperio.mp3",
     "assets/musica/imperial_march.ogg",
     "assets/musica/imperial_march.mp3",
-    "assets/musica/imperio.ogg",
-    "assets/musica/imperio.mp3",
 ]
 
 VICTORY_MUSIC_FILES = [
     "assets/musica/premio.ogg",
     "assets/musica/premio.mp3",
-    "assets/musica/premio.ogg",
-    "assets/musica/premio.mp3",
 ]
-
 
 # ------------------------------------------------------------
 # FUNCION: reproducir_musica
@@ -99,7 +90,6 @@ ventana = pygame.display.set_mode((variables.ANCHO, variables.ALTO))
 pygame.display.set_caption("Juego Star Wars de Daniel y Ruben")
 clock = pygame.time.Clock()
 
-# Reproduce la musica de intro al arrancar
 reproducir_musica(INTRO_MUSIC_FILES, "intro")
 
 
@@ -113,6 +103,14 @@ enemy_base_image = pygame.image.load("assets/enemigo.png").convert_alpha()
 enemy_big_base_image = pygame.image.load("assets/enemigo2.png").convert_alpha()
 title_image = pygame.image.load("assets/titulo.png").convert_alpha()
 
+# Imagen de GAME OVER
+game_over_image = None
+try:
+    game_over_image = pygame.image.load("assets/game_over.png").convert_alpha()
+    game_over_image = pygame.transform.smoothscale(game_over_image, (400, 200))
+except Exception as e:
+    print("No se pudo cargar assets/game_over.png:", e)
+
 background_image = pygame.transform.smoothscale(background_image, (variables.ANCHO, variables.ALTO))
 
 
@@ -123,15 +121,12 @@ player_image = escalar_cuadrado(player_image, personaje.Personaje.player_width)
 meteor_image = escalar_cuadrado(meteor_image, meteoritos.meteor_width)
 enemy_image = escalar_cuadrado(enemy_base_image, 60)
 enemy_big_image = escalar_cuadrado(enemy_big_base_image, 95)
-
-# Titulo mas ancho hacia los lados
 title_image = pygame.transform.smoothscale(title_image, (1000, 350))
 
 
 # ------------------------------------------------------------
 # FUENTES
 # ------------------------------------------------------------
-font_titulo = pygame.font.SysFont(None, 70)
 font_subtitulo = pygame.font.SysFont(None, 42)
 font_nivel = pygame.font.SysFont(None, 36)
 font_boton = pygame.font.SysFont(None, 40)
@@ -158,10 +153,8 @@ def pantalla_inicio():
         overlay.fill((0, 0, 0, 140))
         ventana.blit(overlay, (0, 0))
 
-        # Titulo como imagen
         ventana.blit(title_image, (variables.ANCHO // 2 - title_image.get_width() // 2, -50))
 
-        # Subtitulo
         subtitulo = font_subtitulo.render("Selecciona un nivel", True, (255, 220, 80))
         ventana.blit(subtitulo, (variables.ANCHO // 2 - subtitulo.get_width() // 2, 220))
 
@@ -217,8 +210,7 @@ def pantalla_inicio():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                return "salir"
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
@@ -241,38 +233,13 @@ def pantalla_inicio():
 # PANTALLA GAME OVER
 # ------------------------------------------------------------
 def pantalla_game_over(nivel, puntuacion):
-    font_game_over = pygame.font.SysFont(None, 90)
     font_info = pygame.font.SysFont(None, 42)
     font_small = pygame.font.SysFont(None, 32)
 
     reproducir_musica(GAME_OVER_MUSIC_FILES, "game over")
 
     while True:
-        ventana.blit(background_image, (0, 0))
-
-        overlay = pygame.Surface((variables.ANCHO, variables.ALTO), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 180))
-        ventana.blit(overlay, (0, 0))
-
-        texto_go = font_game_over.render("GAME OVER", True, (255, 60, 60))
-        ventana.blit(texto_go, (variables.ANCHO // 2 - texto_go.get_width() // 2, 140))
-
-        texto_imperio = font_info.render("Ha ganado el Imperio", True, (255, 220, 80))
-        ventana.blit(texto_imperio, (variables.ANCHO // 2 - texto_imperio.get_width() // 2, 220))
-
-        texto_puntos = font_info.render(f"Puntuacion final: {puntuacion}", True, (255, 255, 255))
-        ventana.blit(texto_puntos, (variables.ANCHO // 2 - texto_puntos.get_width() // 2, 280))
-
-        texto_nivel = font_info.render(f"Nivel jugado: {nivel}", True, (255, 255, 255))
-        ventana.blit(texto_nivel, (variables.ANCHO // 2 - texto_nivel.get_width() // 2, 335))
-
-        texto_reiniciar = font_small.render("Pulsa R para repetir el nivel", True, (255, 220, 80))
-        ventana.blit(texto_reiniciar, (variables.ANCHO // 2 - texto_reiniciar.get_width() // 2, 410))
-
-        texto_salir = font_small.render("Pulsa ESC para salir", True, (220, 220, 220))
-        ventana.blit(texto_salir, (variables.ANCHO // 2 - texto_salir.get_width() // 2, 450))
-
-        pygame.display.flip()
+        clock.tick(60)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -283,6 +250,42 @@ def pantalla_game_over(nivel, puntuacion):
                     return "repetir"
                 elif event.key == pygame.K_ESCAPE:
                     return "salir"
+
+        ventana.blit(background_image, (0, 0))
+
+        overlay = pygame.Surface((variables.ANCHO, variables.ALTO), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        ventana.blit(overlay, (0, 0))
+
+        if game_over_image is not None:
+            ventana.blit(
+                game_over_image,
+                (
+                    variables.ANCHO // 2 - game_over_image.get_width() // 2,
+                    90
+                )
+            )
+        else:
+            font_game_over = pygame.font.SysFont(None, 90)
+            texto_go = font_game_over.render("GAME OVER", True, (255, 60, 60))
+            ventana.blit(texto_go, (variables.ANCHO // 2 - texto_go.get_width() // 2, 140))
+
+        texto_imperio = font_info.render("Ha ganado el Imperio", True, (255, 220, 80))
+        ventana.blit(texto_imperio, (variables.ANCHO // 2 - texto_imperio.get_width() // 2, 250))
+
+        texto_puntos = font_info.render(f"Puntuacion final: {puntuacion}", True, (255, 255, 255))
+        ventana.blit(texto_puntos, (variables.ANCHO // 2 - texto_puntos.get_width() // 2, 310))
+
+        texto_nivel = font_info.render(f"Nivel jugado: {nivel}", True, (255, 255, 255))
+        ventana.blit(texto_nivel, (variables.ANCHO // 2 - texto_nivel.get_width() // 2, 360))
+
+        texto_reiniciar = font_small.render("Pulsa R para repetir el nivel", True, (255, 220, 80))
+        ventana.blit(texto_reiniciar, (variables.ANCHO // 2 - texto_reiniciar.get_width() // 2, 430))
+
+        texto_salir = font_small.render("Pulsa ESC para salir", True, (220, 220, 220))
+        ventana.blit(texto_salir, (variables.ANCHO // 2 - texto_salir.get_width() // 2, 470))
+
+        pygame.display.flip()
 
 
 # ------------------------------------------------------------
@@ -296,6 +299,20 @@ def pantalla_victoria(nivel, puntuacion):
     reproducir_musica(VICTORY_MUSIC_FILES, "victoria")
 
     while True:
+        clock.tick(60)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return "salir"
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_n and nivel < 5:
+                    return "siguiente"
+                elif event.key == pygame.K_r:
+                    return "repetir"
+                elif event.key == pygame.K_ESCAPE:
+                    return "salir"
+
         ventana.blit(background_image, (0, 0))
 
         overlay = pygame.Surface((variables.ANCHO, variables.ALTO), pygame.SRCALPHA)
@@ -330,24 +347,11 @@ def pantalla_victoria(nivel, puntuacion):
 
         pygame.display.flip()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                return "salir"
-
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_n and nivel < 5:
-                    return "siguiente"
-                elif event.key == pygame.K_r:
-                    return "repetir"
-                elif event.key == pygame.K_ESCAPE:
-                    return "salir"
-
 
 # ------------------------------------------------------------
 # JUGAR UN NIVEL
 # ------------------------------------------------------------
 def jugar(nivel_elegido):
-    # Musica segun el nivel
     if nivel_elegido == 1:
         reproducir_musica(LEVEL1_MUSIC_FILES, "nivel 1")
     else:
@@ -391,8 +395,7 @@ def jugar(nivel_elegido):
     ultimo_disparo = 0
     pausa = False
 
-    run = True
-    while run:
+    while True:
         clock.tick(60)
 
         for event in pygame.event.get():
@@ -425,7 +428,6 @@ def jugar(nivel_elegido):
             balas.append(pygame.Rect(bx, by, bala_w, bala_h))
             ultimo_disparo = ahora
 
-        # Si esta pausado, dibujamos pantalla y seguimos a la siguiente vuelta
         if pausa:
             ventana.blit(background_image, (0, 0))
             ventana.blit(player_image, (personaje.Personaje.player.x, personaje.Personaje.player.y))
@@ -490,10 +492,7 @@ def jugar(nivel_elegido):
 
                     if e.hp <= 0:
                         enemigos.enemies.remove(e)
-                        if e.tipo == "grande":
-                            variables.puntuacion += 60
-                        else:
-                            variables.puntuacion += 20
+                        variables.puntuacion += 60 if e.tipo == "grande" else 20
                     break
 
             if hit:
@@ -502,7 +501,6 @@ def jugar(nivel_elegido):
         if variables.puntuacion >= objetivo_puntos:
             return pantalla_victoria(nivel_elegido, variables.puntuacion)
 
-        ventana.fill(variables.BLACK)
         ventana.blit(background_image, (0, 0))
         ventana.blit(player_image, (personaje.Personaje.player.x, personaje.Personaje.player.y))
 
@@ -532,13 +530,15 @@ def jugar(nivel_elegido):
 
         pygame.display.flip()
 
-    return "salir"
-
 
 # ------------------------------------------------------------
 # PROGRAMA PRINCIPAL
 # ------------------------------------------------------------
 nivel_actual = pantalla_inicio()
+
+if nivel_actual == "salir":
+    pygame.quit()
+    sys.exit()
 
 while True:
     resultado = jugar(nivel_actual)

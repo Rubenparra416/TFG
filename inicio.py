@@ -4,6 +4,7 @@ import personaje
 import variables
 import meteoritos
 import enemigos
+import sys
 
 pygame.init()
 variables.font = pygame.font.SysFont(None, 36)
@@ -25,134 +26,301 @@ clock = pygame.time.Clock()
 player_image = pygame.image.load("assets/milenario.png").convert_alpha()
 meteor_image = pygame.image.load("assets/meteorito.png").convert_alpha()
 background_image = pygame.image.load("assets/fondo.jpg").convert()
-enemy_image = pygame.image.load("assets/enemigo.png").convert_alpha()
+enemy_base_image = pygame.image.load("assets/enemigo.png").convert_alpha()
+enemy_big_image = pygame.image.load("assets/enemigo2.png").convert_alpha()
+
+background_image = pygame.transform.smoothscale(background_image, (variables.ANCHO, variables.ALTO))
 
 # --- Escalar imágenes ---
 player_image = escalar_cuadrado(player_image, personaje.Personaje.player_width)
 meteor_image = escalar_cuadrado(meteor_image, meteoritos.meteor_width)
-enemy_image = escalar_cuadrado(enemy_image, enemigos.enemy_width)
+enemy_image = escalar_cuadrado(enemy_base_image, 60)
+enemy_big_image = escalar_cuadrado(enemy_big_image, 95)
 
-# --- Disparos (balas) ---
-balas = []
-bala_w, bala_h = 6, 16
-bala_speed = 10
-cooldown_ms = 220
-ultimo_disparo = 0
+# --- Fuentes menú ---
+font_titulo = pygame.font.SysFont(None, 70)
+font_subtitulo = pygame.font.SysFont(None, 42)
+font_nivel = pygame.font.SysFont(None, 36)
+font_boton = pygame.font.SysFont(None, 40)
 
-# --- Config enemigos ---
-MAX_ENEMIGOS = 4
-SPAWN_ENEMIGO_PROB = 0.03
+def pantalla_inicio():
+    niveles = [1, 2, 3, 4, 5]
+    nivel_seleccionado = 0
 
-run = True
-while run:
-    dt = clock.tick(60)
+    boton_jugar = pygame.Rect(variables.ANCHO // 2 - 100, 500, 200, 60)
+    rects_niveles = []
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
+    while True:
+        mouse_pos = pygame.mouse.get_pos()
 
-    # --- Movimiento jugador ---
-    keys = pygame.key.get_pressed()
-    speed = personaje.Personaje.player_speed
+        ventana.blit(background_image, (0, 0))
 
-    if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and personaje.Personaje.player.left > 0:
-        personaje.Personaje.player.x -= speed
-    if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and personaje.Personaje.player.right < variables.ANCHO:
-        personaje.Personaje.player.x += speed
-    if (keys[pygame.K_UP] or keys[pygame.K_w]) and personaje.Personaje.player.top > 0:
-        personaje.Personaje.player.y -= speed
-    if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and personaje.Personaje.player.bottom < variables.ALTO:
-        personaje.Personaje.player.y += speed
+        overlay = pygame.Surface((variables.ANCHO, variables.ALTO), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 140))
+        ventana.blit(overlay, (0, 0))
 
-    # >>> IMPORTANTÍSIMO: sincronizar hitbox tras mover
+        titulo = font_titulo.render("Juego Star Wars", True, (255, 255, 255))
+        ventana.blit(titulo, (variables.ANCHO // 2 - titulo.get_width() // 2, 60))
+
+        subtitulo = font_subtitulo.render("Selecciona un nivel", True, (255, 220, 80))
+        ventana.blit(subtitulo, (variables.ANCHO // 2 - subtitulo.get_width() // 2, 150))
+
+        rects_niveles.clear()
+        for i, nivel in enumerate(niveles):
+            rect = pygame.Rect(variables.ANCHO // 2 - 120, 220 + i * 50, 240, 40)
+            rects_niveles.append(rect)
+
+            hover = rect.collidepoint(mouse_pos)
+            seleccionado = i == nivel_seleccionado
+
+            if seleccionado:
+                color_fondo = (50, 120, 255)
+                color_texto = (255, 255, 255)
+            elif hover:
+                color_fondo = (80, 80, 80)
+                color_texto = (255, 255, 255)
+            else:
+                color_fondo = (30, 30, 30)
+                color_texto = (200, 200, 200)
+
+            pygame.draw.rect(ventana, color_fondo, rect, border_radius=8)
+            pygame.draw.rect(ventana, (255, 255, 255), rect, 2, border_radius=8)
+
+            texto_nivel = font_nivel.render(f"Nivel {nivel}", True, color_texto)
+            ventana.blit(
+                texto_nivel,
+                (
+                    rect.centerx - texto_nivel.get_width() // 2,
+                    rect.centery - texto_nivel.get_height() // 2
+                )
+            )
+
+        hover_boton = boton_jugar.collidepoint(mouse_pos)
+        color_boton = (0, 180, 90) if hover_boton else (0, 140, 70)
+        pygame.draw.rect(ventana, color_boton, boton_jugar, border_radius=10)
+        pygame.draw.rect(ventana, (255, 255, 255), boton_jugar, 2, border_radius=10)
+
+        texto_jugar = font_boton.render("JUGAR", True, (255, 255, 255))
+        ventana.blit(
+            texto_jugar,
+            (
+                boton_jugar.centerx - texto_jugar.get_width() // 2,
+                boton_jugar.centery - texto_jugar.get_height() // 2
+            )
+        )
+
+        instrucciones = font_nivel.render("Usa flechas ↑ ↓ o haz clic", True, (230, 230, 230))
+        ventana.blit(instrucciones, (variables.ANCHO // 2 - instrucciones.get_width() // 2, 575))
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    nivel_seleccionado = (nivel_seleccionado - 1) % 5
+                elif event.key == pygame.K_DOWN:
+                    nivel_seleccionado = (nivel_seleccionado + 1) % 5
+                elif event.key == pygame.K_RETURN:
+                    return niveles[nivel_seleccionado]
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                for i, rect in enumerate(rects_niveles):
+                    if rect.collidepoint(event.pos):
+                        nivel_seleccionado = i
+
+                if boton_jugar.collidepoint(event.pos):
+                    return niveles[nivel_seleccionado]
+
+def pantalla_game_over(nivel, puntuacion):
+    font_game_over = pygame.font.SysFont(None, 90)
+    font_info = pygame.font.SysFont(None, 42)
+    font_small = pygame.font.SysFont(None, 32)
+
+    while True:
+        ventana.blit(background_image, (0, 0))
+
+        overlay = pygame.Surface((variables.ANCHO, variables.ALTO), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        ventana.blit(overlay, (0, 0))
+
+        texto_go = font_game_over.render("GAME OVER", True, (255, 60, 60))
+        ventana.blit(texto_go, (variables.ANCHO // 2 - texto_go.get_width() // 2, 140))
+
+        texto_puntos = font_info.render(f"Puntuacion final: {puntuacion}", True, (255, 255, 255))
+        ventana.blit(texto_puntos, (variables.ANCHO // 2 - texto_puntos.get_width() // 2, 260))
+
+        texto_nivel = font_info.render(f"Nivel jugado: {nivel}", True, (255, 255, 255))
+        ventana.blit(texto_nivel, (variables.ANCHO // 2 - texto_nivel.get_width() // 2, 315))
+
+        texto_reiniciar = font_small.render("Pulsa R para volver a jugar", True, (255, 220, 80))
+        ventana.blit(texto_reiniciar, (variables.ANCHO // 2 - texto_reiniciar.get_width() // 2, 410))
+
+        texto_salir = font_small.render("Pulsa ESC para salir", True, (220, 220, 220))
+        ventana.blit(texto_salir, (variables.ANCHO // 2 - texto_salir.get_width() // 2, 450))
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    return True
+                elif event.key == pygame.K_ESCAPE:
+                    return False
+
+def jugar():
+    nivel_elegido = pantalla_inicio()
+
+    variables.puntuacion = 0
+    meteoritos.meteors.clear()
+    enemigos.enemies.clear()
+
+    personaje.Personaje.player.x = variables.ANCHO // 2 - personaje.Personaje.player_width // 2
+    personaje.Personaje.player.y = variables.ALTO - personaje.Personaje.player_height - 10
     personaje.Personaje.update_hitbox()
 
-    # --- Disparar (espacio) ---
-    ahora = pygame.time.get_ticks()
-    if keys[pygame.K_SPACE] and (ahora - ultimo_disparo) >= cooldown_ms:
-        bx = personaje.Personaje.player.centerx - bala_w // 2
-        by = personaje.Personaje.player.top - bala_h
-        balas.append(pygame.Rect(bx, by, bala_w, bala_h))
-        ultimo_disparo = ahora
+    if nivel_elegido == 1:
+        velocidad_meteoritos = 4
+        max_enemigos = 2
+        spawn_enemigo_prob = 0.01
+    elif nivel_elegido == 2:
+        velocidad_meteoritos = 5
+        max_enemigos = 3
+        spawn_enemigo_prob = 0.02
+    elif nivel_elegido == 3:
+        velocidad_meteoritos = 6
+        max_enemigos = 4
+        spawn_enemigo_prob = 0.03
+    elif nivel_elegido == 4:
+        velocidad_meteoritos = 7
+        max_enemigos = 5
+        spawn_enemigo_prob = 0.04
+    else:
+        velocidad_meteoritos = 8
+        max_enemigos = 6
+        spawn_enemigo_prob = 0.05
 
-    # --- Generar meteoritos ---
-    if len(meteoritos.meteors) < 5:
-        meteor_x = random.randint(0, variables.ANCHO - meteoritos.meteor_width)
-        meteor_y = random.randint(-100, -40)
-        meteor_rect = pygame.Rect(meteor_x, meteor_y, meteoritos.meteor_width, meteoritos.meteor_height)
-        meteoritos.meteors.append(meteor_rect)
+    balas = []
+    bala_w, bala_h = 6, 16
+    bala_speed = 10
+    cooldown_ms = 220
+    ultimo_disparo = 0
 
-    # --- Generar enemigos ---
-    if len(enemigos.enemies) < MAX_ENEMIGOS and random.random() < SPAWN_ENEMIGO_PROB:
-        enemigos.spawn_enemy(variables.ANCHO)
+    run = True
+    while run:
+        clock.tick(60)
 
-    # --- Update balas ---
-    for b in balas[:]:
-        b.y -= bala_speed
-        if b.bottom < 0:
-            balas.remove(b)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
 
-    # --- Update meteoritos ---
-    for meteor in meteoritos.meteors[:]:
-        meteor.y += 5
-        if meteor.top > variables.ALTO:
-            meteoritos.meteors.remove(meteor)
-            variables.puntuacion += 1
+        keys = pygame.key.get_pressed()
+        speed = personaje.Personaje.player_speed
 
-    # --- Update enemigos ---
-    for e in enemigos.enemies[:]:
-        e.update()
-        if e.rect.top > variables.ALTO:
-            enemigos.enemies.remove(e)
+        if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and personaje.Personaje.player.left > 0:
+            personaje.Personaje.player.x -= speed
+        if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and personaje.Personaje.player.right < variables.ANCHO:
+            personaje.Personaje.player.x += speed
+        if (keys[pygame.K_UP] or keys[pygame.K_w]) and personaje.Personaje.player.top > 0:
+            personaje.Personaje.player.y -= speed
+        if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and personaje.Personaje.player.bottom < variables.ALTO:
+            personaje.Personaje.player.y += speed
 
-    # --- Colisiones: jugador vs meteoritos (USANDO HITBOX) ---
-    for meteor in meteoritos.meteors:
-        if personaje.Personaje.hitbox.colliderect(meteor):
-            run = False
+        personaje.Personaje.update_hitbox()
 
-    # --- Colisiones: jugador vs enemigos (USANDO HITBOX) ---
-    for e in enemigos.enemies:
-        if personaje.Personaje.hitbox.colliderect(e.rect):
-            run = False
+        ahora = pygame.time.get_ticks()
+        if keys[pygame.K_SPACE] and (ahora - ultimo_disparo) >= cooldown_ms:
+            bx = personaje.Personaje.player.centerx - bala_w // 2
+            by = personaje.Personaje.player.top - bala_h
+            balas.append(pygame.Rect(bx, by, bala_w, bala_h))
+            ultimo_disparo = ahora
 
-    # --- Colisiones: balas vs enemigos ---
-    for b in balas[:]:
-        hit = False
+        if len(meteoritos.meteors) < 5:
+            meteor_x = random.randint(0, variables.ANCHO - meteoritos.meteor_width)
+            meteor_y = random.randint(-100, -40)
+            meteor_rect = pygame.Rect(meteor_x, meteor_y, meteoritos.meteor_width, meteoritos.meteor_height)
+            meteoritos.meteors.append(meteor_rect)
+
+        if len(enemigos.enemies) < max_enemigos and random.random() < spawn_enemigo_prob:
+            enemigos.spawn_enemy(variables.ANCHO, nivel_elegido)
+
+        for b in balas[:]:
+            b.y -= bala_speed
+            if b.bottom < 0:
+                balas.remove(b)
+
+        for meteor in meteoritos.meteors[:]:
+            meteor.y += velocidad_meteoritos
+            if meteor.top > variables.ALTO:
+                meteoritos.meteors.remove(meteor)
+                variables.puntuacion += 1
+
         for e in enemigos.enemies[:]:
-            if b.colliderect(e.rect):
+            e.update()
+            if e.rect.top > variables.ALTO:
                 enemigos.enemies.remove(e)
-                hit = True
-                variables.puntuacion += 20
-                break
-        if hit:
-            balas.remove(b)
 
-    # --- Dibujar ---
-    ventana.fill(variables.BLACK)
-    ventana.blit(background_image, (0, 0))
+        for meteor in meteoritos.meteors:
+            if personaje.Personaje.hitbox.colliderect(meteor):
+                return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
-    # jugador (se dibuja con player, pero choca con hitbox)
-    ventana.blit(player_image, (personaje.Personaje.player.x, personaje.Personaje.player.y))
+        for e in enemigos.enemies:
+            if personaje.Personaje.hitbox.colliderect(e.rect):
+                return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
-    # meteoritos
-    for meteor in meteoritos.meteors:
-        ventana.blit(meteor_image, (meteor.x, meteor.y))
+        for b in balas[:]:
+            hit = False
+            for e in enemigos.enemies[:]:
+                if b.colliderect(e.rect):
+                    e.hp -= 1
+                    hit = True
 
-    # enemigos
-    for e in enemigos.enemies:
-        ventana.blit(enemy_image, (e.rect.x, e.rect.y))
+                    if e.hp <= 0:
+                        enemigos.enemies.remove(e)
+                        if e.tipo == "grande":
+                            variables.puntuacion += 60
+                        else:
+                            variables.puntuacion += 20
+                    break
 
-    # balas
-    for b in balas:
-        pygame.draw.rect(ventana, (255, 220, 80), b)
+            if hit:
+                balas.remove(b)
 
-    # (OPCIONAL) dibujar hitbox para verla y ajustar
-    # pygame.draw.rect(ventana, (255, 0, 0), personaje.Personaje.hitbox, 2)
+        ventana.fill(variables.BLACK)
+        ventana.blit(background_image, (0, 0))
+        ventana.blit(player_image, (personaje.Personaje.player.x, personaje.Personaje.player.y))
 
-    # puntuación
-    puntuacion_text = variables.font.render(f"Puntuacion: {variables.puntuacion}", True, variables.WHITE)
-    ventana.blit(puntuacion_text, (10, 10))
+        for meteor in meteoritos.meteors:
+            ventana.blit(meteor_image, (meteor.x, meteor.y))
 
-    pygame.display.flip()
+        for e in enemigos.enemies:
+            if e.tipo == "grande":
+                ventana.blit(enemy_big_image, (e.rect.x, e.rect.y))
+            else:
+                ventana.blit(enemy_image, (e.rect.x, e.rect.y))
+
+        for b in balas:
+            pygame.draw.rect(ventana, (255, 220, 80), b)
+
+        puntuacion_text = variables.font.render(f"Puntuacion: {variables.puntuacion}", True, variables.WHITE)
+        ventana.blit(puntuacion_text, (10, 10))
+
+        nivel_text = variables.font.render(f"Nivel: {nivel_elegido}", True, variables.WHITE)
+        ventana.blit(nivel_text, (10, 45))
+
+        pygame.display.flip()
+
+    return False
+
+while True:
+    reiniciar = jugar()
+    if not reiniciar:
+        break
 
 pygame.quit()

@@ -1,9 +1,9 @@
 import pygame
 import random
-import personaje
+import clases.personaje as personaje
 import variables
-import meteoritos
-import enemigos
+import clases.meteoritos as meteoritos
+import clases.enemigos as enemigos
 import sys
 
 pygame.init()
@@ -35,7 +35,7 @@ background_image = pygame.transform.smoothscale(background_image, (variables.ANC
 player_image = escalar_cuadrado(player_image, personaje.Personaje.player_width)
 meteor_image = escalar_cuadrado(meteor_image, meteoritos.meteor_width)
 enemy_image = escalar_cuadrado(enemy_base_image, 60)
-enemy_big_image = escalar_cuadrado(enemy_big_image, 95)
+enemy_big_image = escalar_cuadrado(enemy_base_image, 95)
 
 # --- Fuentes menú ---
 font_titulo = pygame.font.SysFont(None, 70)

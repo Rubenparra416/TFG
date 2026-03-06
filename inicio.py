@@ -1,97 +1,136 @@
 import pygame
 import random
-
-# Importamos nuestros módulos del juego
-# personaje -> contiene la nave del jugador
-# variables -> contiene colores, tamaño de pantalla, puntuación, etc.
-# meteoritos -> contiene la lista de meteoritos y sus tamaños
-# enemigos -> contiene la lista de enemigos y cómo se generan
-import clases.personaje as personaje
-import clases.variables as variables
-import clases.meteoritos as meteoritos
-import clases.enemigos as enemigos
+import clases.personaje as personaje 
+import clases.variables as variables 
+import clases.meteoritos as meteoritos 
+import clases.enemigos as enemigos 
 import sys
 
-# Inicia todos los módulos de pygame
-pygame.init()
+import sys
+from pathlib import Path
 
-# Creamos una fuente de texto general y la guardamos en variables
-# Esto nos permite usarla en otras partes del juego para mostrar textos
+
+try:
+    from clases import personaje, variables, meteoritos, enemigos
+except ModuleNotFoundError:
+    # Permite ejecutar este archivo directamente desde /clases
+    sys.path.append(str(Path(__file__).parent))
+
+pygame.init()
 variables.font = pygame.font.SysFont(None, 36)
 
+# ------------------------------------------------------------
+# RUTAS DE MUSICA
+# ------------------------------------------------------------
+INTRO_MUSIC_FILES = [
+    "assets/intro.ogg",
+    "assets/musica/intro.mp3",
+    "assets/musica/intro.ogg",
+    "assets/musica/intro.mp3",
+    "assets/star_wars_theme.ogg",
+    "assets/star_wars_theme.mp3",
+]
+
+LEVEL1_MUSIC_FILES = [
+    "assets/nivel1.ogg",
+    "assets/musica/nivel1.mp3",
+    "assets/level1.ogg",
+    "assets/level1.mp3",
+    "assets/musica/nivel1.ogg",
+    "assets/musica/nivel1.mp3",
+]
+
+GAME_OVER_MUSIC_FILES = [
+    "assets/musica/imperio.ogg",
+    "assets/musica/imperio.mp3",
+    "assets/musica/imperial_march.ogg",
+    "assets/musica/imperial_march.mp3",
+    "assets/musica/imperio.ogg",
+    "assets/musica/imperio.mp3",
+]
+
+VICTORY_MUSIC_FILES = [
+    "assets/musica/victoria.ogg",
+    "assets/musica/victoria.mp3",
+    "assets/musica/victoria.ogg",
+    "assets/musica/victoria.mp3",
+]
+
 
 # ------------------------------------------------------------
-# FUNCIÓN: escalar_cuadrado
+# FUNCION: reproducir_musica
 # ------------------------------------------------------------
-# Esta función sirve para:
-# 1. Recortar una imagen al centro en forma de cuadrado
-# 2. Escalarla al tamaño que queramos
-#
-# ¿Por qué hacemos esto?
-# Porque algunas imágenes no son cuadradas y se deforman al redimensionarlas.
-# Así primero cogemos la parte central cuadrada y luego la ajustamos bien.
+def reproducir_musica(files, nombre, volume=0.35):
+    for relative_path in files:
+        track_path = Path(relative_path)
+        if not track_path.exists():
+            continue
+
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()
+            pygame.mixer.music.load(str(track_path))
+            pygame.mixer.music.set_volume(volume)
+            pygame.mixer.music.play(-1)
+            return True
+        except pygame.error as exc:
+            print(f"No se pudo reproducir musica de {nombre} ({track_path}): {exc}")
+
+    print(f"No se encontro musica de {nombre}. Coloca un archivo en assets/.")
+    return False
+
+
+# ------------------------------------------------------------
+# FUNCION: escalar_cuadrado
+# ------------------------------------------------------------
 def escalar_cuadrado(image, side):
-    width, height = image.get_size()   # tamaño original de la imagen
-    base = min(width, height)          # usamos el lado más pequeño para hacer el cuadrado
-    x = (width - base) // 2            # coordenada X para recortar desde el centro
-    y = (height - base) // 2           # coordenada Y para recortar desde el centro
-
-    # Recortamos la imagen a un cuadrado central
+    width, height = image.get_size()
+    base = min(width, height)
+    x = (width - base) // 2
+    y = (height - base) // 2
     square = image.subsurface((x, y, base, base)).copy()
-
-    # Escalamos la imagen cuadrada al tamaño deseado
     return pygame.transform.smoothscale(square, (side, side))
 
 
 # ------------------------------------------------------------
 # VENTANA PRINCIPAL DEL JUEGO
 # ------------------------------------------------------------
-# Creamos la ventana usando el ancho y alto guardados en variables
 ventana = pygame.display.set_mode((variables.ANCHO, variables.ALTO))
-
-# Título de la ventana
 pygame.display.set_caption("Juego Star Wars de Daniel y Ruben")
-
-# Clock sirve para controlar los FPS (frames por segundo)
 clock = pygame.time.Clock()
 
+# Reproduce la musica de intro al arrancar
+reproducir_musica(INTRO_MUSIC_FILES, "intro")
+
 
 # ------------------------------------------------------------
-# CARGA DE IMÁGENES
+# CARGA DE IMAGENES
 # ------------------------------------------------------------
-# convert_alpha() se usa para imágenes con transparencia (PNG)
 player_image = pygame.image.load("assets/milenario.png").convert_alpha()
 meteor_image = pygame.image.load("assets/meteorito.png").convert_alpha()
 background_image = pygame.image.load("assets/fondo.jpg").convert()
-
-# Imagen del enemigo normal
 enemy_base_image = pygame.image.load("assets/enemigo.png").convert_alpha()
-
-# Imagen del enemigo grande
 enemy_big_base_image = pygame.image.load("assets/enemigo2.png").convert_alpha()
+title_image = pygame.image.load("assets/titulo.png").convert_alpha()
 
-# Ajustamos el fondo al tamaño completo de la pantalla
 background_image = pygame.transform.smoothscale(background_image, (variables.ANCHO, variables.ALTO))
 
 
 # ------------------------------------------------------------
-# ESCALAR IMÁGENES
+# ESCALADO DE IMAGENES
 # ------------------------------------------------------------
-# Adaptamos las imágenes a los tamaños del juego
 player_image = escalar_cuadrado(player_image, personaje.Personaje.player_width)
 meteor_image = escalar_cuadrado(meteor_image, meteoritos.meteor_width)
-
-# Enemigo normal a 60x60
 enemy_image = escalar_cuadrado(enemy_base_image, 60)
-
-# Enemigo grande a 95x95
 enemy_big_image = escalar_cuadrado(enemy_big_base_image, 95)
 
+# Titulo mas ancho hacia los lados
+title_image = pygame.transform.smoothscale(title_image, (1000, 350))
+
 
 # ------------------------------------------------------------
-# FUENTES DEL MENÚ
+# FUENTES
 # ------------------------------------------------------------
-# Estas fuentes se usan para los textos de las pantallas del juego
 font_titulo = pygame.font.SysFont(None, 70)
 font_subtitulo = pygame.font.SysFont(None, 42)
 font_nivel = pygame.font.SysFont(None, 36)
@@ -99,60 +138,42 @@ font_boton = pygame.font.SysFont(None, 40)
 
 
 # ------------------------------------------------------------
-# FUNCIÓN: pantalla_inicio
+# PANTALLA DE INICIO
 # ------------------------------------------------------------
-# Muestra el menú inicial:
-# - elegir nivel del 1 al 5
-# - moverse con flechas o hacer clic con el ratón
-# - pulsar JUGAR
-#
-# Devuelve el número del nivel elegido
 def pantalla_inicio():
-    niveles = [1, 2, 3, 4, 5]   # lista de niveles
-    nivel_seleccionado = 0       # empezamos seleccionando el primer nivel
+    reproducir_musica(INTRO_MUSIC_FILES, "intro")
 
-    # Botón de jugar
-    boton_jugar = pygame.Rect(variables.ANCHO // 2 - 100, 500, 200, 60)
+    niveles = [1, 2, 3, 4, 5]
+    nivel_seleccionado = 0
 
-    # Lista donde guardaremos los rectángulos visuales de los niveles
+    boton_jugar = pygame.Rect(variables.ANCHO // 2 - 100, 560, 200, 60)
     rects_niveles = []
 
     while True:
-        # Posición actual del ratón
         mouse_pos = pygame.mouse.get_pos()
 
-        # Dibujamos fondo
         ventana.blit(background_image, (0, 0))
 
-        # Capa oscura semitransparente encima del fondo para que el texto se vea mejor
         overlay = pygame.Surface((variables.ANCHO, variables.ALTO), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 140))
         ventana.blit(overlay, (0, 0))
 
-        # Título principal
-        titulo = font_titulo.render("Juego Star Wars", True, (255, 255, 255))
-        ventana.blit(titulo, (variables.ANCHO // 2 - titulo.get_width() // 2, 60))
+        # Titulo como imagen
+        ventana.blit(title_image, (variables.ANCHO // 2 - title_image.get_width() // 2, -50))
 
-        # Subtítulo
+        # Subtitulo
         subtitulo = font_subtitulo.render("Selecciona un nivel", True, (255, 220, 80))
-        ventana.blit(subtitulo, (variables.ANCHO // 2 - subtitulo.get_width() // 2, 150))
+        ventana.blit(subtitulo, (variables.ANCHO // 2 - subtitulo.get_width() // 2, 220))
 
-        # Limpiamos la lista de rectángulos para volver a crearla en cada frame
         rects_niveles.clear()
 
-        # Dibujamos los 5 niveles
         for i, nivel in enumerate(niveles):
-            # Creamos el rectángulo de cada nivel
-            rect = pygame.Rect(variables.ANCHO // 2 - 120, 220 + i * 50, 240, 40)
+            rect = pygame.Rect(variables.ANCHO // 2 - 120, 290 + i * 50, 240, 40)
             rects_niveles.append(rect)
 
-            # Comprobamos si el ratón está encima
             hover = rect.collidepoint(mouse_pos)
-
-            # Comprobamos si este nivel es el seleccionado
             seleccionado = i == nivel_seleccionado
 
-            # Elegimos colores según el estado
             if seleccionado:
                 color_fondo = (50, 120, 255)
                 color_texto = (255, 255, 255)
@@ -163,11 +184,9 @@ def pantalla_inicio():
                 color_fondo = (30, 30, 30)
                 color_texto = (200, 200, 200)
 
-            # Dibujamos el rectángulo
             pygame.draw.rect(ventana, color_fondo, rect, border_radius=8)
             pygame.draw.rect(ventana, (255, 255, 255), rect, 2, border_radius=8)
 
-            # Dibujamos el texto del nivel
             texto_nivel = font_nivel.render(f"Nivel {nivel}", True, color_texto)
             ventana.blit(
                 texto_nivel,
@@ -177,7 +196,6 @@ def pantalla_inicio():
                 )
             )
 
-        # Dibujamos el botón jugar
         hover_boton = boton_jugar.collidepoint(mouse_pos)
         color_boton = (0, 180, 90) if hover_boton else (0, 140, 70)
         pygame.draw.rect(ventana, color_boton, boton_jugar, border_radius=10)
@@ -192,20 +210,16 @@ def pantalla_inicio():
             )
         )
 
-        # Instrucciones
         instrucciones = font_nivel.render("Usa flechas ↑ ↓ o haz clic", True, (230, 230, 230))
-        ventana.blit(instrucciones, (variables.ANCHO // 2 - instrucciones.get_width() // 2, 575))
+        ventana.blit(instrucciones, (variables.ANCHO // 2 - instrucciones.get_width() // 2, 650))
 
-        # Actualizamos la pantalla
         pygame.display.flip()
 
-        # Gestionamos eventos
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-            # Controles de teclado
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     nivel_seleccionado = (nivel_seleccionado - 1) % 5
@@ -214,32 +228,24 @@ def pantalla_inicio():
                 elif event.key == pygame.K_RETURN:
                     return niveles[nivel_seleccionado]
 
-            # Controles de ratón
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                # Si pulsamos en un nivel, lo seleccionamos
                 for i, rect in enumerate(rects_niveles):
                     if rect.collidepoint(event.pos):
                         nivel_seleccionado = i
 
-                # Si pulsamos el botón JUGAR, empezamos
                 if boton_jugar.collidepoint(event.pos):
                     return niveles[nivel_seleccionado]
 
 
 # ------------------------------------------------------------
-# FUNCIÓN: pantalla_game_over
+# PANTALLA GAME OVER
 # ------------------------------------------------------------
-# Muestra la pantalla cuando pierdes
-# Opciones:
-# - R para repetir
-# - ESC para salir
-#
-# Devuelve:
-# "repetir" o "salir"
 def pantalla_game_over(nivel, puntuacion):
     font_game_over = pygame.font.SysFont(None, 90)
     font_info = pygame.font.SysFont(None, 42)
     font_small = pygame.font.SysFont(None, 32)
+
+    reproducir_musica(GAME_OVER_MUSIC_FILES, "game over")
 
     while True:
         ventana.blit(background_image, (0, 0))
@@ -251,11 +257,14 @@ def pantalla_game_over(nivel, puntuacion):
         texto_go = font_game_over.render("GAME OVER", True, (255, 60, 60))
         ventana.blit(texto_go, (variables.ANCHO // 2 - texto_go.get_width() // 2, 140))
 
+        texto_imperio = font_info.render("Ha ganado el Imperio", True, (255, 220, 80))
+        ventana.blit(texto_imperio, (variables.ANCHO // 2 - texto_imperio.get_width() // 2, 220))
+
         texto_puntos = font_info.render(f"Puntuacion final: {puntuacion}", True, (255, 255, 255))
-        ventana.blit(texto_puntos, (variables.ANCHO // 2 - texto_puntos.get_width() // 2, 260))
+        ventana.blit(texto_puntos, (variables.ANCHO // 2 - texto_puntos.get_width() // 2, 280))
 
         texto_nivel = font_info.render(f"Nivel jugado: {nivel}", True, (255, 255, 255))
-        ventana.blit(texto_nivel, (variables.ANCHO // 2 - texto_nivel.get_width() // 2, 315))
+        ventana.blit(texto_nivel, (variables.ANCHO // 2 - texto_nivel.get_width() // 2, 335))
 
         texto_reiniciar = font_small.render("Pulsa R para repetir el nivel", True, (255, 220, 80))
         ventana.blit(texto_reiniciar, (variables.ANCHO // 2 - texto_reiniciar.get_width() // 2, 410))
@@ -277,20 +286,14 @@ def pantalla_game_over(nivel, puntuacion):
 
 
 # ------------------------------------------------------------
-# FUNCIÓN: pantalla_victoria
+# PANTALLA VICTORIA
 # ------------------------------------------------------------
-# Muestra la pantalla cuando llegas al objetivo de puntos
-# Opciones:
-# - N para pasar al siguiente nivel
-# - R para repetir
-# - ESC para salir
-#
-# Devuelve:
-# "siguiente", "repetir" o "salir"
 def pantalla_victoria(nivel, puntuacion):
     font_win = pygame.font.SysFont(None, 80)
     font_info = pygame.font.SysFont(None, 42)
     font_small = pygame.font.SysFont(None, 32)
+
+    reproducir_musica(VICTORY_MUSIC_FILES, "victoria")
 
     while True:
         ventana.blit(background_image, (0, 0))
@@ -299,7 +302,6 @@ def pantalla_victoria(nivel, puntuacion):
         overlay.fill((0, 0, 0, 180))
         ventana.blit(overlay, (0, 0))
 
-        # Texto principal distinto según si es el último nivel o no
         if nivel < 5:
             texto_win = font_win.render("NIVEL COMPLETADO", True, (80, 255, 120))
         else:
@@ -313,7 +315,6 @@ def pantalla_victoria(nivel, puntuacion):
         texto_nivel = font_info.render(f"Nivel actual: {nivel}", True, (255, 255, 255))
         ventana.blit(texto_nivel, (variables.ANCHO // 2 - texto_nivel.get_width() // 2, 290))
 
-        # Si no es el último nivel, mostramos la opción de pasar al siguiente
         if nivel < 5:
             texto_siguiente = font_small.render("Pulsa N para pasar al siguiente nivel", True, (255, 220, 80))
             ventana.blit(texto_siguiente, (variables.ANCHO // 2 - texto_siguiente.get_width() // 2, 390))
@@ -343,27 +344,23 @@ def pantalla_victoria(nivel, puntuacion):
 
 
 # ------------------------------------------------------------
-# FUNCIÓN: jugar
+# JUGAR UN NIVEL
 # ------------------------------------------------------------
-# Ejecuta una partida completa de un nivel
-# Recibe como parámetro el nivel elegido
-#
-# Devuelve:
-# - resultado de pantalla_game_over
-# - resultado de pantalla_victoria
-# - "salir" si se cierra el juego
 def jugar(nivel_elegido):
-    # Reiniciamos puntuación y listas
+    # Musica segun el nivel
+    if nivel_elegido == 1:
+        reproducir_musica(LEVEL1_MUSIC_FILES, "nivel 1")
+    else:
+        reproducir_musica(INTRO_MUSIC_FILES, f"nivel {nivel_elegido}")
+
     variables.puntuacion = 0
     meteoritos.meteors.clear()
     enemigos.enemies.clear()
 
-    # Colocamos al jugador en su posición inicial
     personaje.Personaje.player.x = variables.ANCHO // 2 - personaje.Personaje.player_width // 2
     personaje.Personaje.player.y = variables.ALTO - personaje.Personaje.player_height - 10
     personaje.Personaje.update_hitbox()
 
-    # Configuración según el nivel
     if nivel_elegido == 1:
         velocidad_meteoritos = 4
         max_enemigos = 2
@@ -385,202 +382,154 @@ def jugar(nivel_elegido):
         max_enemigos = 6
         spawn_enemigo_prob = 0.05
 
-    # Puntos necesarios para completar el nivel
-    objetivo_puntos = 1000
+    objetivo_puntos = nivel_elegido * 500
 
-    # Lista de balas del jugador
     balas = []
-
-    # Tamaño de las balas
     bala_w, bala_h = 6, 16
-
-    # Velocidad de las balas
     bala_speed = 10
-
-    # Tiempo mínimo entre disparos (en milisegundos)
     cooldown_ms = 220
-
-    # Momento del último disparo
     ultimo_disparo = 0
+    pausa = False
 
     run = True
     while run:
-        # Limitamos a 60 FPS
         clock.tick(60)
 
-        # ------------------------------------
-        # EVENTOS
-        # ------------------------------------
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return "salir"
 
-        # ------------------------------------
-        # MOVIMIENTO DEL JUGADOR
-        # ------------------------------------
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    pausa = not pausa
+
         keys = pygame.key.get_pressed()
         speed = personaje.Personaje.player_speed
 
-        if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and personaje.Personaje.player.left > 0:
-            personaje.Personaje.player.x -= speed
+        if not pausa:
+            if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and personaje.Personaje.player.left > 0:
+                personaje.Personaje.player.x -= speed
+            if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and personaje.Personaje.player.right < variables.ANCHO:
+                personaje.Personaje.player.x += speed
+            if (keys[pygame.K_UP] or keys[pygame.K_w]) and personaje.Personaje.player.top > 0:
+                personaje.Personaje.player.y -= speed
+            if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and personaje.Personaje.player.bottom < variables.ALTO:
+                personaje.Personaje.player.y += speed
 
-        if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and personaje.Personaje.player.right < variables.ANCHO:
-            personaje.Personaje.player.x += speed
-
-        if (keys[pygame.K_UP] or keys[pygame.K_w]) and personaje.Personaje.player.top > 0:
-            personaje.Personaje.player.y -= speed
-
-        if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and personaje.Personaje.player.bottom < variables.ALTO:
-            personaje.Personaje.player.y += speed
-
-        # Actualizamos la hitbox después de mover el jugador
         personaje.Personaje.update_hitbox()
 
-        # ------------------------------------
-        # DISPARO DEL JUGADOR
-        # ------------------------------------
         ahora = pygame.time.get_ticks()
-
-        # Solo dispara si se pulsa espacio y ha pasado el cooldown
-        if keys[pygame.K_SPACE] and (ahora - ultimo_disparo) >= cooldown_ms:
+        if keys[pygame.K_SPACE] and (ahora - ultimo_disparo) >= cooldown_ms and not pausa:
             bx = personaje.Personaje.player.centerx - bala_w // 2
             by = personaje.Personaje.player.top - bala_h
-
-            # Creamos una bala como rectángulo y la añadimos a la lista
             balas.append(pygame.Rect(bx, by, bala_w, bala_h))
             ultimo_disparo = ahora
 
-        # ------------------------------------
-        # GENERAR METEORITOS
-        # ------------------------------------
+        # Si esta pausado, dibujamos pantalla y seguimos a la siguiente vuelta
+        if pausa:
+            ventana.blit(background_image, (0, 0))
+            ventana.blit(player_image, (personaje.Personaje.player.x, personaje.Personaje.player.y))
+
+            for meteor in meteoritos.meteors:
+                ventana.blit(meteor_image, (meteor.x, meteor.y))
+
+            for e in enemigos.enemies:
+                if e.tipo == "grande":
+                    ventana.blit(enemy_big_image, (e.rect.x, e.rect.y))
+                else:
+                    ventana.blit(enemy_image, (e.rect.x, e.rect.y))
+
+            for b in balas:
+                pygame.draw.rect(ventana, (255, 220, 80), b)
+
+            pausa_text = variables.font.render("Juego pausado - Presiona P para continuar", True, (255, 255, 255))
+            text_rect = pausa_text.get_rect(center=(variables.ANCHO // 2, variables.ALTO // 2))
+            ventana.blit(pausa_text, text_rect)
+            pygame.display.flip()
+            continue
+
         if len(meteoritos.meteors) < 5:
             meteor_x = random.randint(0, variables.ANCHO - meteoritos.meteor_width)
             meteor_y = random.randint(-100, -40)
-            meteor_rect = pygame.Rect(
-                meteor_x,
-                meteor_y,
-                meteoritos.meteor_width,
-                meteoritos.meteor_height
-            )
+            meteor_rect = pygame.Rect(meteor_x, meteor_y, meteoritos.meteor_width, meteoritos.meteor_height)
             meteoritos.meteors.append(meteor_rect)
 
-        # ------------------------------------
-        # GENERAR ENEMIGOS
-        # ------------------------------------
         if len(enemigos.enemies) < max_enemigos and random.random() < spawn_enemigo_prob:
             enemigos.spawn_enemy(variables.ANCHO, nivel_elegido)
 
-        # ------------------------------------
-        # ACTUALIZAR BALAS
-        # ------------------------------------
         for b in balas[:]:
             b.y -= bala_speed
             if b.bottom < 0:
                 balas.remove(b)
 
-        # ------------------------------------
-        # ACTUALIZAR METEORITOS
-        # ------------------------------------
         for meteor in meteoritos.meteors[:]:
             meteor.y += velocidad_meteoritos
-
-            # Si el meteorito sale por abajo, se elimina y sumamos puntos
             if meteor.top > variables.ALTO:
                 meteoritos.meteors.remove(meteor)
                 variables.puntuacion += 5
 
-        # ------------------------------------
-        # ACTUALIZAR ENEMIGOS
-        # ------------------------------------
         for e in enemigos.enemies[:]:
             e.update()
             if e.rect.top > variables.ALTO:
                 enemigos.enemies.remove(e)
 
-        # ------------------------------------
-        # COLISIONES JUGADOR VS METEORITOS
-        # ------------------------------------
         for meteor in meteoritos.meteors:
             if personaje.Personaje.hitbox.colliderect(meteor):
                 return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
-        # ------------------------------------
-        # COLISIONES JUGADOR VS ENEMIGOS
-        # ------------------------------------
         for e in enemigos.enemies:
             if personaje.Personaje.hitbox.colliderect(e.rect):
                 return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
-        # ------------------------------------
-        # COLISIONES BALAS VS ENEMIGOS
-        # ------------------------------------
         for b in balas[:]:
             hit = False
-
             for e in enemigos.enemies[:]:
                 if b.colliderect(e.rect):
-                    # Si una bala toca a un enemigo, le quitamos 1 de vida
                     e.hp -= 1
                     hit = True
 
-                    # Si la vida llega a 0, el enemigo muere
                     if e.hp <= 0:
                         enemigos.enemies.remove(e)
-
-                        # El enemigo grande da más puntos
                         if e.tipo == "grande":
                             variables.puntuacion += 60
                         else:
                             variables.puntuacion += 20
                     break
 
-            # Eliminamos la bala si ha golpeado algo
             if hit:
                 balas.remove(b)
 
-        # ------------------------------------
-        # COMPROBAR VICTORIA
-        # ------------------------------------
         if variables.puntuacion >= objetivo_puntos:
             return pantalla_victoria(nivel_elegido, variables.puntuacion)
 
-        # ------------------------------------
-        # DIBUJAR TODO EN PANTALLA
-        # ------------------------------------
         ventana.fill(variables.BLACK)
         ventana.blit(background_image, (0, 0))
-
-        # Dibujamos la nave del jugador
         ventana.blit(player_image, (personaje.Personaje.player.x, personaje.Personaje.player.y))
 
-        # Dibujamos meteoritos
         for meteor in meteoritos.meteors:
             ventana.blit(meteor_image, (meteor.x, meteor.y))
 
-        # Dibujamos enemigos
         for e in enemigos.enemies:
             if e.tipo == "grande":
                 ventana.blit(enemy_big_image, (e.rect.x, e.rect.y))
             else:
                 ventana.blit(enemy_image, (e.rect.x, e.rect.y))
 
-        # Dibujamos balas
         for b in balas:
             pygame.draw.rect(ventana, (255, 220, 80), b)
 
-        # Mostramos puntuación
         puntuacion_text = variables.font.render(f"Puntuacion: {variables.puntuacion}", True, variables.WHITE)
         ventana.blit(puntuacion_text, (10, 10))
 
-        # Mostramos nivel actual
         nivel_text = variables.font.render(f"Nivel: {nivel_elegido}", True, variables.WHITE)
         ventana.blit(nivel_text, (10, 45))
 
-        # Mostramos objetivo de puntos
         objetivo_text = variables.font.render(f"Objetivo: {objetivo_puntos}", True, variables.WHITE)
         ventana.blit(objetivo_text, (10, 80))
 
-        # Actualizamos pantalla
+        pausa_info = variables.font.render("P para pausar", True, variables.WHITE)
+        ventana.blit(pausa_info, (10, 115))
+
         pygame.display.flip()
 
     return "salir"
@@ -589,28 +538,20 @@ def jugar(nivel_elegido):
 # ------------------------------------------------------------
 # PROGRAMA PRINCIPAL
 # ------------------------------------------------------------
-# Primero elegimos un nivel en el menú
 nivel_actual = pantalla_inicio()
 
-# Bucle principal del juego completo
 while True:
     resultado = jugar(nivel_actual)
 
-    # Si el jugador quiere salir, terminamos
     if resultado == "salir":
         break
-
-    # Si quiere repetir, volvemos a jugar el mismo nivel
     elif resultado == "repetir":
         continue
-
-    # Si quiere pasar al siguiente nivel
     elif resultado == "siguiente":
         if nivel_actual < 5:
             nivel_actual += 1
         else:
             break
 
-# Cerramos pygame y salimos del programa
 pygame.quit()
 sys.exit()

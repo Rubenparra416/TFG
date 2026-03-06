@@ -50,10 +50,10 @@ GAME_OVER_MUSIC_FILES = [
 ]
 
 VICTORY_MUSIC_FILES = [
-    "assets/musica/victoria.ogg",
-    "assets/musica/victoria.mp3",
-    "assets/musica/victoria.ogg",
-    "assets/musica/victoria.mp3",
+    "assets/musica/premio.ogg",
+    "assets/musica/premio.mp3",
+    "assets/musica/premio.ogg",
+    "assets/musica/premio.mp3",
 ]
 
 

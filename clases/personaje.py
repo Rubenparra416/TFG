@@ -1,5 +1,5 @@
 import pygame
-import variables
+import clases.variables as variables
 
 class Personaje:
     player_width = 80

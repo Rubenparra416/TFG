@@ -15,7 +15,6 @@ class Personaje:
     )
 
     # Hitbox más pequeña (colisiones)
-    # 0.62 suele ir muy bien para naves: casi “cuerpo” sin alas/bordes.
     HITBOX_SCALE = 0.62
 
     hitbox = pygame.Rect(0, 0,

@@ -27,29 +27,163 @@ meteor_image = pygame.image.load("assets/meteorito.png").convert_alpha()
 background_image = pygame.image.load("assets/fondo.jpg").convert()
 enemy_image = pygame.image.load("assets/enemigo.png").convert_alpha()
 
+# ✅ Fondo a pantalla completa
+background_image = pygame.transform.smoothscale(background_image, (variables.ANCHO, variables.ALTO))
+
 # --- Escalar imágenes ---
 player_image = escalar_cuadrado(player_image, personaje.Personaje.player_width)
 meteor_image = escalar_cuadrado(meteor_image, meteoritos.meteor_width)
 enemy_image = escalar_cuadrado(enemy_image, enemigos.enemy_width)
 
-# --- Disparos (balas) ---
+# =========================
+#   Estados
+# =========================
+MENU = "menu"
+JUGANDO = "jugando"
+GAMEOVER = "gameover"
+estado = MENU
+
+# Fuentes
+font_title = pygame.font.SysFont(None, 84)
+font_btn = pygame.font.SysFont(None, 44)
+font_hint = pygame.font.SysFont(None, 26)
+
+def dibujar_boton(surface, rect, texto, mouse_pos):
+    hover = rect.collidepoint(mouse_pos)
+    color = (80, 180, 120) if hover else (60, 140, 95)
+    pygame.draw.rect(surface, color, rect, border_radius=14)
+    pygame.draw.rect(surface, (20, 20, 20), rect, 3, border_radius=14)
+    txt = font_btn.render(texto, True, (245, 245, 245))
+    surface.blit(txt, txt.get_rect(center=rect.center))
+    return hover
+
+def pantalla_inicio():
+    """Devuelve True si el usuario quiere empezar."""
+    ventana.fill((10, 10, 18))
+    ventana.blit(background_image, (0, 0))
+
+    mouse_pos = pygame.mouse.get_pos()
+
+    titulo = font_title.render("STAR WARS", True, (240, 240, 240))
+    ventana.blit(titulo, titulo.get_rect(center=(variables.ANCHO // 2, variables.ALTO // 2 - 170)))
+
+    subt = font_hint.render("Daniel y Rubén", True, (210, 210, 210))
+    ventana.blit(subt, subt.get_rect(center=(variables.ANCHO // 2, variables.ALTO // 2 - 125)))
+
+    boton = pygame.Rect(0, 0, 320, 80)
+    boton.center = (variables.ANCHO // 2, variables.ALTO // 2 - 10)
+    hover = dibujar_boton(ventana, boton, "INICIAR JUEGO", mouse_pos)
+
+    hint = font_hint.render("Click o ENTER", True, (200, 200, 200))
+    ventana.blit(hint, hint.get_rect(center=(variables.ANCHO // 2, variables.ALTO // 2 + 70)))
+
+    pygame.display.flip()
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            raise SystemExit
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+            return True
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and hover:
+            return True
+
+    return False
+
+def pantalla_gameover():
+    """
+    Devuelve:
+      - "retry" si reintentar
+      - "menu" si volver al menú
+      - None si no se elige nada
+    """
+    ventana.fill((10, 0, 0))
+    ventana.blit(background_image, (0, 0))
+
+    # Capa oscura encima para que se lea bien
+    overlay = pygame.Surface((variables.ANCHO, variables.ALTO), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 160))
+    ventana.blit(overlay, (0, 0))
+
+    mouse_pos = pygame.mouse.get_pos()
+
+    titulo = font_title.render("GAME OVER", True, (255, 220, 220))
+    ventana.blit(titulo, titulo.get_rect(center=(variables.ANCHO // 2, variables.ALTO // 2 - 180)))
+
+    score_txt = pygame.font.SysFont(None, 42).render(f"Puntuación: {variables.puntuacion}", True, (245, 245, 245))
+    ventana.blit(score_txt, score_txt.get_rect(center=(variables.ANCHO // 2, variables.ALTO // 2 - 120)))
+
+    btn_retry = pygame.Rect(0, 0, 280, 72)
+    btn_retry.center = (variables.ANCHO // 2, variables.ALTO // 2 - 20)
+    hover_retry = dibujar_boton(ventana, btn_retry, "REINTENTAR", mouse_pos)
+
+    btn_menu = pygame.Rect(0, 0, 280, 72)
+    btn_menu.center = (variables.ANCHO // 2, variables.ALTO // 2 + 70)
+    hover_menu = dibujar_boton(ventana, btn_menu, "MENÚ", mouse_pos)
+
+    hint = font_hint.render("ENTER = reintentar | M = menú", True, (220, 220, 220))
+    ventana.blit(hint, hint.get_rect(center=(variables.ANCHO // 2, variables.ALTO // 2 + 150)))
+
+    pygame.display.flip()
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            raise SystemExit
+
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                return "retry"
+            if event.key == pygame.K_m:
+                return "menu"
+
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if hover_retry:
+                return "retry"
+            if hover_menu:
+                return "menu"
+
+    return None
+
+# =========================
+#   Variables de partida
+# =========================
 balas = []
 bala_w, bala_h = 6, 16
 bala_speed = 10
 cooldown_ms = 220
 ultimo_disparo = 0
 
-# --- Config enemigos ---
 MAX_ENEMIGOS = 4
 SPAWN_ENEMIGO_PROB = 0.03
 
-run = True
-while run:
-    dt = clock.tick(60)
+def iniciar_partida():
+    """Resetea TODO lo necesario para empezar limpio."""
+    global balas, ultimo_disparo
+
+    variables.puntuacion = 0
+    meteoritos.meteors.clear()
+    enemigos.enemies.clear()
+
+    balas = []
+    ultimo_disparo = 0
+
+    personaje.Personaje.player.centerx = variables.ANCHO // 2
+    personaje.Personaje.player.bottom = variables.ALTO - 10
+    personaje.Personaje.update_hitbox()
+
+def loop_juego():
+    """1 frame de juego. Devuelve 'gameover' si pierdes, 'menu' si ESC, o None."""
+    global ultimo_disparo
+
+    clock.tick(60)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            run = False
+            pygame.quit()
+            raise SystemExit
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            return "menu"
 
     # --- Movimiento jugador ---
     keys = pygame.key.get_pressed()
@@ -64,10 +198,9 @@ while run:
     if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and personaje.Personaje.player.bottom < variables.ALTO:
         personaje.Personaje.player.y += speed
 
-    # >>> IMPORTANTÍSIMO: sincronizar hitbox tras mover
     personaje.Personaje.update_hitbox()
 
-    # --- Disparar (espacio) ---
+    # --- Disparar ---
     ahora = pygame.time.get_ticks()
     if keys[pygame.K_SPACE] and (ahora - ultimo_disparo) >= cooldown_ms:
         bx = personaje.Personaje.player.centerx - bala_w // 2
@@ -105,17 +238,16 @@ while run:
         if e.rect.top > variables.ALTO:
             enemigos.enemies.remove(e)
 
-    # --- Colisiones: jugador vs meteoritos (USANDO HITBOX) ---
+    # --- Colisiones jugador ---
     for meteor in meteoritos.meteors:
         if personaje.Personaje.hitbox.colliderect(meteor):
-            run = False
+            return "gameover"
 
-    # --- Colisiones: jugador vs enemigos (USANDO HITBOX) ---
     for e in enemigos.enemies:
         if personaje.Personaje.hitbox.colliderect(e.rect):
-            run = False
+            return "gameover"
 
-    # --- Colisiones: balas vs enemigos ---
+    # --- Colisiones balas vs enemigos ---
     for b in balas[:]:
         hit = False
         for e in enemigos.enemies[:]:
@@ -131,28 +263,45 @@ while run:
     ventana.fill(variables.BLACK)
     ventana.blit(background_image, (0, 0))
 
-    # jugador (se dibuja con player, pero choca con hitbox)
     ventana.blit(player_image, (personaje.Personaje.player.x, personaje.Personaje.player.y))
 
-    # meteoritos
     for meteor in meteoritos.meteors:
         ventana.blit(meteor_image, (meteor.x, meteor.y))
 
-    # enemigos
     for e in enemigos.enemies:
         ventana.blit(enemy_image, (e.rect.x, e.rect.y))
 
-    # balas
     for b in balas:
         pygame.draw.rect(ventana, (255, 220, 80), b)
 
-    # (OPCIONAL) dibujar hitbox para verla y ajustar
-    # pygame.draw.rect(ventana, (255, 0, 0), personaje.Personaje.hitbox, 2)
-
-    # puntuación
     puntuacion_text = variables.font.render(f"Puntuacion: {variables.puntuacion}", True, variables.WHITE)
     ventana.blit(puntuacion_text, (10, 10))
 
     pygame.display.flip()
+    return None
 
-pygame.quit()
+# =========================
+#   Bucle principal
+# =========================
+while True:
+    if estado == MENU:
+        clock.tick(60)
+        if pantalla_inicio():
+            iniciar_partida()
+            estado = JUGANDO
+
+    elif estado == JUGANDO:
+        resultado = loop_juego()
+        if resultado == "menu":
+            estado = MENU
+        elif resultado == "gameover":
+            estado = GAMEOVER
+
+    elif estado == GAMEOVER:
+        clock.tick(60)
+        accion = pantalla_gameover()
+        if accion == "retry":
+            iniciar_partida()
+            estado = JUGANDO
+        elif accion == "menu":
+            estado = MENU

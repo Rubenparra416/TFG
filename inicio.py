@@ -196,6 +196,7 @@ def pantalla_inicio():
             rect = pygame.Rect(variables.ANCHO // 2 - 120, 290 + i * 50, 240, 40)
             rects_niveles.append(rect)
 
+       
             bloqueado = nivel > variables.nivel_desbloqueado
             hover = rect.collidepoint(mouse_pos)
             seleccionado = i == nivel_seleccionado
@@ -217,8 +218,8 @@ def pantalla_inicio():
             pygame.draw.rect(ventana, (255, 255, 255), rect, 2, border_radius=8)
 
             texto = f"Nivel {nivel}"
-            if bloqueado:
-                texto += " 🔒"
+           # if bloqueado:
+              #  texto += " 🔒"
 
             texto_nivel = font_nivel.render(texto, True, color_texto)
             ventana.blit(
@@ -258,13 +259,13 @@ def pantalla_inicio():
             (variables.ANCHO // 2 - instrucciones.get_width() // 2, 650),
         )
 
-        if nivel_bloqueado:
-            texto_bloqueado = font_nivel.render(
-                "Debes completar los niveles anteriores",
-                True,
-                (255, 120, 120)
-            )
-            ventana.blit(texto_bloqueado, (variables.ANCHO // 2 - texto_bloqueado.get_width() // 2, 610))
+        #if nivel_bloqueado:
+           # texto_bloqueado = font_nivel.render(
+             #   "Debes completar los niveles anteriores",
+             #   True,
+             #   (255, 120, 120)
+            #)
+           # ventana.blit(texto_bloqueado, (variables.ANCHO // 2 - texto_bloqueado.get_width() // 2, 610))
 
         pygame.display.flip()
 
@@ -278,7 +279,7 @@ def pantalla_inicio():
                 elif event.key == pygame.K_DOWN:
                     nivel_seleccionado = (nivel_seleccionado + 1) % 5
                 elif event.key == pygame.K_RETURN:
-                    if niveles[nivel_seleccionado] <= variables.nivel_desbloqueado:
+                   # if niveles[nivel_seleccionado] <= variables.nivel_desbloqueado:
                         return niveles[nivel_seleccionado]
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -287,7 +288,7 @@ def pantalla_inicio():
                         nivel_seleccionado = i
 
                 if boton_jugar.collidepoint(event.pos):
-                    if niveles[nivel_seleccionado] <= variables.nivel_desbloqueado:
+                  #  if niveles[nivel_seleccionado] <= variables.nivel_desbloqueado:
                         return niveles[nivel_seleccionado]
 
 
@@ -312,6 +313,8 @@ def pantalla_game_over(nivel, puntuacion):
                     return "repetir"
                 elif event.key == pygame.K_ESCAPE:
                     return "salir"
+                else:
+                    return "menu"
 
         ventana.blit(background_image, (0, 0))
 
@@ -348,7 +351,7 @@ def pantalla_game_over(nivel, puntuacion):
         )
         ventana.blit(
             texto_puntos,
-            (variables.ANCHO // 2 - texto_puntos.get_width() // 2, 310),
+            (variables.ANCHO // 2 - texto_puntos.get_width() // 2, 330),
         )
 
         texto_nivel = font_info.render(
@@ -356,34 +359,36 @@ def pantalla_game_over(nivel, puntuacion):
         )
         ventana.blit(
             texto_nivel,
-            (variables.ANCHO // 2 - texto_nivel.get_width() // 2, 360),
+            (variables.ANCHO // 2 - texto_nivel.get_width() // 2, 380),
         )
-
 
         texto_reiniciar = font_small.render(
             "Pulsa R para repetir el nivel", True, (255, 220, 80)
         )
         ventana.blit(
             texto_reiniciar,
-            (variables.ANCHO // 2 - texto_reiniciar.get_width() // 2, 430),
+            (variables.ANCHO // 2 - texto_reiniciar.get_width() // 2, 470),
         )
 
-        texto_reiniciar = font_small.render("Pulsa R para repetir el nivel", True, (255, 220, 80))
-        ventana.blit(texto_reiniciar, (variables.ANCHO // 2 - texto_reiniciar.get_width() // 2, 430))
-        texto_menu = font_small.render("Pulsa cualquier otra tecla para volver al menu", True, (255, 220, 80))
-        ventana.blit(texto_menu, (variables.ANCHO // 2 - texto_menu.get_width() // 2, 470))
-
+        texto_menu = font_small.render(
+            "Pulsa cualquier otra tecla para volver al menu",
+            True,
+            (255, 220, 80),
+        )
+        ventana.blit(
+            texto_menu,
+            (variables.ANCHO // 2 - texto_menu.get_width() // 2, 510),
+        )
 
         texto_salir = font_small.render(
             "Pulsa ESC para salir", True, (220, 220, 220)
         )
         ventana.blit(
             texto_salir,
-            (variables.ANCHO // 2 - texto_salir.get_width() // 2, 470),
+            (variables.ANCHO // 2 - texto_salir.get_width() // 2, 550),
         )
 
         pygame.display.flip()
-
 
 # ------------------------------------------------------------
 # PANTALLA VICTORIA
@@ -515,8 +520,8 @@ def pantalla_victoria(nivel, puntuacion):
 # JUGAR UN NIVEL
 # ------------------------------------------------------------
 def jugar(nivel_elegido):
-    if nivel_elegido > variables.nivel_desbloqueado:
-        return "bloqueado"
+   # if nivel_elegido > variables.nivel_desbloqueado:
+      #  return "bloqueado"
 
     if nivel_elegido == 1:
         reproducir_musica(LEVEL1_MUSIC_FILES, "nivel 1")

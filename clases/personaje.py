@@ -23,8 +23,9 @@ class Personaje:
 
     @classmethod
     def update_hitbox(cls):
+
         # Mantener la hitbox siempre centrada en el jugador
-        cls.hitbox.center = cls.player.center
+        cls.hitbox.center = cls.player.center    
 
 # Inicializar hitbox al crear la clase
 Personaje.update_hitbox()

@@ -15,7 +15,7 @@ import clases.enemigos as enemigos
 
 
 pygame.init()
-variables.font = pygame.font.SysFont(None, 36)
+variables.font = pygame.font.SysFont("arial", 36, bold=True)
 
 WHITE = getattr(variables, "WHITE", (255, 255, 255))
 
@@ -141,6 +141,13 @@ enemy_big_base_image = pygame.image.load("assets/enemigo2.png").convert_alpha()
 title_image = pygame.image.load("assets/titulo.png").convert_alpha()
 enemy_shooter_image = pygame.image.load("assets/boss.png").convert_alpha()
 
+victory_image = None
+try:
+    victory_image = pygame.image.load("assets/victoria.png").convert_alpha()
+    victory_image = pygame.transform.smoothscale(victory_image, (400, 200))
+except Exception as e:
+    print("No se pudo cargar assets/victoria.png:", e)
+
 game_over_image = None
 try:
     game_over_image = pygame.image.load("assets/game_over.png").convert_alpha()
@@ -163,9 +170,12 @@ title_image = pygame.transform.smoothscale(title_image, (1000, 350))
 # ------------------------------------------------------------
 # FUENTES
 # ------------------------------------------------------------
-font_subtitulo = pygame.font.SysFont(None, 42)
-font_nivel = pygame.font.SysFont(None, 36)
-font_boton = pygame.font.SysFont(None, 40)
+font_subtitulo = pygame.font.SysFont("arial", 32, bold=True)
+font_nivel = pygame.font.SysFont("arial", 28, bold=True)
+font_boton = pygame.font.SysFont("arial", 34, bold=True)
+font_victoria_titulo = pygame.font.SysFont("arial", 40, bold=True)
+font_victoria_info = pygame.font.SysFont("arial", 36, bold=True)
+font_victoria_small = pygame.font.SysFont("arial", 20, bold=True)
 
 
 # ------------------------------------------------------------
@@ -310,9 +320,12 @@ def pantalla_inicio():
 # ------------------------------------------------------------
 # PANTALLA GAME OVER
 # ------------------------------------------------------------
+# ------------------------------------------------------------
+# PANTALLA GAME OVER
+# ------------------------------------------------------------
 def pantalla_game_over(nivel, puntuacion):
-    font_info = pygame.font.SysFont(None, 42)
-    font_small = pygame.font.SysFont(None, 32)
+    font_info = pygame.font.SysFont("arial", 30, bold=True)
+    font_small = pygame.font.SysFont("arial", 24, bold=True)
 
     reproducir_musica(GAME_OVER_MUSIC_FILES, "game over")
 
@@ -337,28 +350,57 @@ def pantalla_game_over(nivel, puntuacion):
         overlay.fill((0, 0, 0, 180))
         ventana.blit(overlay, (0, 0))
 
+        # Imagen superior
         if game_over_image is not None:
             ventana.blit(
                 game_over_image,
                 (
                     variables.ANCHO // 2 - game_over_image.get_width() // 2,
-                    90,
+                    70,
                 ),
             )
         else:
-            font_game_over = pygame.font.SysFont(None, 90)
+            font_game_over = pygame.font.SysFont("arial", 70, bold=True)
             texto_go = font_game_over.render("GAME OVER", True, (255, 60, 60))
             ventana.blit(
                 texto_go,
-                (variables.ANCHO // 2 - texto_go.get_width() // 2, 140),
+                (variables.ANCHO // 2 - texto_go.get_width() // 2, 100),
             )
 
+        # Recuadro central
+        panel_width = 700
+        panel_height = 340
+        panel_x = variables.ANCHO // 2 - panel_width // 2
+        panel_y = 240
+
+        panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+        panel.fill((20, 10, 10, 185))
+        ventana.blit(panel, (panel_x, panel_y))
+
+        # Bordes
+        pygame.draw.rect(
+            ventana,
+            (255, 80, 80),
+            (panel_x, panel_y, panel_width, panel_height),
+            3,
+            border_radius=18
+        )
+
+        pygame.draw.rect(
+            ventana,
+            (255, 255, 255),
+            (panel_x + 8, panel_y + 8, panel_width - 16, panel_height - 16),
+            1,
+            border_radius=14
+        )
+
+        # Textos
         texto_imperio = font_info.render(
             "Ha ganado el Imperio", True, (255, 220, 80)
         )
         ventana.blit(
             texto_imperio,
-            (variables.ANCHO // 2 - texto_imperio.get_width() // 2, 250),
+            (variables.ANCHO // 2 - texto_imperio.get_width() // 2, panel_y + 40),
         )
 
         texto_puntos = font_info.render(
@@ -366,15 +408,15 @@ def pantalla_game_over(nivel, puntuacion):
         )
         ventana.blit(
             texto_puntos,
-            (variables.ANCHO // 2 - texto_puntos.get_width() // 2, 330),
+            (variables.ANCHO // 2 - texto_puntos.get_width() // 2, panel_y + 95),
         )
 
         texto_nivel = font_info.render(
-            f"Nivel jugado: {nivel}", True, (255, 255, 255)
+            f"Nivel jugado: {nivel}", True, (230, 230, 255)
         )
         ventana.blit(
             texto_nivel,
-            (variables.ANCHO // 2 - texto_nivel.get_width() // 2, 380),
+            (variables.ANCHO // 2 - texto_nivel.get_width() // 2, panel_y + 145),
         )
 
         texto_reiniciar = font_small.render(
@@ -382,17 +424,17 @@ def pantalla_game_over(nivel, puntuacion):
         )
         ventana.blit(
             texto_reiniciar,
-            (variables.ANCHO // 2 - texto_reiniciar.get_width() // 2, 470),
+            (variables.ANCHO // 2 - texto_reiniciar.get_width() // 2, panel_y + 215),
         )
 
         texto_menu = font_small.render(
             "Pulsa cualquier otra tecla para volver al menu",
             True,
-            (255, 220, 80),
+            (220, 220, 220),
         )
         ventana.blit(
             texto_menu,
-            (variables.ANCHO // 2 - texto_menu.get_width() // 2, 510),
+            (variables.ANCHO // 2 - texto_menu.get_width() // 2, panel_y + 255),
         )
 
         texto_salir = font_small.render(
@@ -400,21 +442,15 @@ def pantalla_game_over(nivel, puntuacion):
         )
         ventana.blit(
             texto_salir,
-            (variables.ANCHO // 2 - texto_salir.get_width() // 2, 550),
+            (variables.ANCHO // 2 - texto_salir.get_width() // 2, panel_y + 295),
         )
 
         pygame.display.flip()
-
-
 # ------------------------------------------------------------
 # PANTALLA VICTORIA
 # ------------------------------------------------------------
 def pantalla_victoria(nivel, puntuacion):
     desbloquear_siguiente_nivel(nivel)
-
-    font_win = pygame.font.SysFont(None, 80)
-    font_info = pygame.font.SysFont(None, 42)
-    font_small = pygame.font.SysFont(None, 32)
 
     reproducir_musica(VICTORY_MUSIC_FILES, "victoria")
 
@@ -436,82 +472,128 @@ def pantalla_victoria(nivel, puntuacion):
         ventana.blit(background_image, (0, 0))
 
         overlay = pygame.Surface((variables.ANCHO, variables.ALTO), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 180))
+        overlay.fill((0, 0, 0, 170))
         ventana.blit(overlay, (0, 0))
 
-        if nivel < variables.MAX_NIVELES:
-            texto_win = font_win.render("NIVEL COMPLETADO", True, (80, 255, 120))
+        if victory_image is not None:
+            ventana.blit(
+                victory_image,
+                (variables.ANCHO // 2 - victory_image.get_width() // 2, 50),
+            )
         else:
-            texto_win = font_win.render(
-                "HAS COMPLETADO EL JUEGO", True, (80, 255, 120)
+            texto_win = font_victoria_titulo.render(
+                "NIVEL COMPLETADO", True, (80, 255, 120)
+            )
+            ventana.blit(
+                texto_win,
+                (variables.ANCHO // 2 - texto_win.get_width() // 2, 100),
             )
 
-        ventana.blit(
-            texto_win,
-            (variables.ANCHO // 2 - texto_win.get_width() // 2, 120),
+        panel_width = 700
+        panel_height = 360
+        panel_x = variables.ANCHO // 2 - panel_width // 2
+        panel_y = 235
+
+        panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+        panel.fill((15, 15, 25, 185))
+        ventana.blit(panel, (panel_x, panel_y))
+
+        pygame.draw.rect(
+            ventana,
+            (255, 220, 80),
+            (panel_x, panel_y, panel_width, panel_height),
+            3,
+            border_radius=18
         )
 
-        texto_puntos = font_info.render(
+        pygame.draw.rect(
+            ventana,
+            (255, 255, 255),
+            (panel_x + 8, panel_y + 8, panel_width - 16, panel_height - 16),
+            1,
+            border_radius=14
+        )
+
+        texto_puntos = font_victoria_info.render(
             f"Puntuacion final: {puntuacion}", True, (255, 255, 255)
         )
         ventana.blit(
             texto_puntos,
-            (variables.ANCHO // 2 - texto_puntos.get_width() // 2, 240),
+            (variables.ANCHO // 2 - texto_puntos.get_width() // 2, panel_y + 45),
         )
 
-        texto_nivel = font_info.render(
-            f"Nivel actual: {nivel}", True, (255, 255, 255)
+        texto_nivel = font_victoria_info.render(
+            f"Nivel actual: {nivel}", True, (230, 230, 255)
         )
         ventana.blit(
             texto_nivel,
-            (variables.ANCHO // 2 - texto_nivel.get_width() // 2, 290),
+            (variables.ANCHO // 2 - texto_nivel.get_width() // 2, panel_y + 95),
         )
 
         if nivel < variables.MAX_NIVELES:
-            texto_desbloqueado = font_info.render(
+            texto_desbloqueado = font_victoria_info.render(
                 f"Has desbloqueado el nivel {min(nivel + 1, variables.MAX_NIVELES)}",
                 True,
                 (255, 220, 80)
             )
             ventana.blit(
                 texto_desbloqueado,
-                (variables.ANCHO // 2 - texto_desbloqueado.get_width() // 2, 340)
+                (
+                    variables.ANCHO // 2 - texto_desbloqueado.get_width() // 2,
+                    panel_y + 160,
+                ),
             )
 
-            texto_siguiente = font_small.render(
+            texto_siguiente = font_victoria_small.render(
                 "Pulsa N para pasar al siguiente nivel",
                 True,
                 (255, 220, 80)
             )
             ventana.blit(
                 texto_siguiente,
-                (variables.ANCHO // 2 - texto_siguiente.get_width() // 2, 390)
+                (
+                    variables.ANCHO // 2 - texto_siguiente.get_width() // 2,
+                    panel_y + 225,
+                ),
             )
         else:
-            texto_fin = font_small.render(
-                "Ya no quedan mas niveles galacticos",
+            texto_fin = font_victoria_small.render(
+                "Has completado toda la aventura galactica",
                 True,
                 (255, 220, 80)
             )
             ventana.blit(
                 texto_fin,
-                (variables.ANCHO // 2 - texto_fin.get_width() // 2, 390)
+                (
+                    variables.ANCHO // 2 - texto_fin.get_width() // 2,
+                    panel_y + 225,
+                ),
             )
 
-        texto_reiniciar = font_small.render(
-            "Pulsa R para repetir este nivel", True, (220, 220, 220)
+        texto_reiniciar = font_victoria_small.render(
+            "Pulsa R para repetir este nivel",
+            True,
+            (220, 220, 220)
         )
         ventana.blit(
             texto_reiniciar,
-            (variables.ANCHO // 2 - texto_reiniciar.get_width() // 2, 430),
+            (
+                variables.ANCHO // 2 - texto_reiniciar.get_width() // 2,
+                panel_y + 275,
+            ),
         )
 
-        texto_salir = font_small.render(
-            "Pulsa ESC para salir", True, (220, 220, 220)
+        texto_salir = font_victoria_small.render(
+            "Pulsa ESC para salir",
+            True,
+            (220, 220, 220)
         )
         ventana.blit(
             texto_salir,
-            (variables.ANCHO // 2 - texto_salir.get_width() // 2, 470),
+            (
+                variables.ANCHO // 2 - texto_salir.get_width() // 2,
+                panel_y + 315,
+            ),
         )
 
         pygame.display.flip()
@@ -568,13 +650,11 @@ def jugar(nivel_elegido):
     ultimo_disparo = 0
     pausa = False
 
-    # Vida del jugador
     vida_max = 100
     vida_jugador = vida_max
     ultimo_golpe = 0
     invulnerabilidad_ms = 800
 
-    # Boss nivel 4
     boss_activo = nivel_elegido == 4
     boss_hp = 8
     boss_rect = pygame.Rect(variables.ANCHO // 2 - 65, 40, 130, 130)
@@ -585,10 +665,9 @@ def jugar(nivel_elegido):
     boss_cooldown = 900
     ultimo_disparo_boss = 0
 
-    # Final boss nivel 5
     final_boss_aparecio = False
     final_boss_activo = False
-    final_boss_hp = 5
+    final_boss_hp = 15
     final_boss_rect = pygame.Rect(variables.ANCHO // 2 - 90, 30, 180, 180)
     final_boss_dir = 5
     final_boss_balas = []
@@ -675,14 +754,12 @@ def jugar(nivel_elegido):
             pygame.display.flip()
             continue
 
-        # Aparicion del final boss
         if nivel_elegido == 5 and variables.puntuacion >= 600 and not final_boss_aparecio:
             final_boss_aparecio = True
             final_boss_activo = True
             meteoritos.meteors.clear()
             enemigos.enemies.clear()
 
-        # Meteoritos y enemigos normales solo si no esta activo el final boss
         if not final_boss_activo:
             if len(meteoritos.meteors) < 5:
                 meteor_x = random.randint(0, variables.ANCHO - meteoritos.meteor_width)
@@ -698,26 +775,22 @@ def jugar(nivel_elegido):
             if len(enemigos.enemies) < max_enemigos and random.random() < spawn_enemigo_prob:
                 enemigos.spawn_enemy(variables.ANCHO, nivel_elegido)
 
-        # Balas jugador
         for b in balas[:]:
             b.y -= bala_speed
             if b.bottom < 0:
                 balas.remove(b)
 
-        # Movimiento meteoritos
         for meteor in meteoritos.meteors[:]:
             meteor.y += velocidad_meteoritos
             if meteor.top > variables.ALTO:
                 meteoritos.meteors.remove(meteor)
                 variables.puntuacion += 10
 
-        # Movimiento enemigos normales
         for e in enemigos.enemies[:]:
             e.update()
             if e.rect.top > variables.ALTO:
                 enemigos.enemies.remove(e)
 
-        # Boss nivel 4
         if boss_activo and boss_hp > 0:
             boss_rect.x += boss_dir
             if boss_rect.left <= 0 or boss_rect.right >= variables.ANCHO:
@@ -734,7 +807,6 @@ def jugar(nivel_elegido):
             if bb.top > variables.ALTO:
                 boss_balas.remove(bb)
 
-        # Final boss nivel 5
         if final_boss_activo and final_boss_hp > 0:
             final_boss_rect.x += final_boss_dir
             if final_boss_rect.left <= 0 or final_boss_rect.right >= variables.ANCHO:
@@ -766,7 +838,6 @@ def jugar(nivel_elegido):
             ):
                 final_boss_balas.remove(fb)
 
-        # Colisiones jugador con meteoritos
         for meteor in meteoritos.meteors[:]:
             if personaje.Personaje.hitbox.colliderect(meteor):
                 if ahora - ultimo_golpe >= invulnerabilidad_ms:
@@ -778,7 +849,6 @@ def jugar(nivel_elegido):
                     if vida_jugador <= 0:
                         return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
-        # Colisiones jugador con enemigos normales
         for e in enemigos.enemies[:]:
             if personaje.Personaje.hitbox.colliderect(e.rect):
                 if ahora - ultimo_golpe >= invulnerabilidad_ms:
@@ -790,7 +860,6 @@ def jugar(nivel_elegido):
                     if vida_jugador <= 0:
                         return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
-        # Colision jugador con boss nivel 4
         if boss_activo and boss_hp > 0 and personaje.Personaje.hitbox.colliderect(boss_rect):
             if ahora - ultimo_golpe >= invulnerabilidad_ms:
                 vida_jugador -= 35
@@ -798,7 +867,6 @@ def jugar(nivel_elegido):
                 if vida_jugador <= 0:
                     return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
-        # Colision balas boss nivel 4 con jugador
         for bb in boss_balas[:]:
             if personaje.Personaje.hitbox.colliderect(bb):
                 if ahora - ultimo_golpe >= invulnerabilidad_ms:
@@ -810,7 +878,6 @@ def jugar(nivel_elegido):
                     if vida_jugador <= 0:
                         return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
-        # Colision jugador con final boss
         if final_boss_activo and final_boss_hp > 0 and personaje.Personaje.hitbox.colliderect(final_boss_rect):
             if ahora - ultimo_golpe >= invulnerabilidad_ms:
                 vida_jugador -= 40
@@ -818,7 +885,6 @@ def jugar(nivel_elegido):
                 if vida_jugador <= 0:
                     return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
-        # Colision balas final boss con jugador
         for fb in final_boss_balas[:]:
             if personaje.Personaje.hitbox.colliderect(fb["rect"]):
                 if ahora - ultimo_golpe >= invulnerabilidad_ms:
@@ -830,7 +896,6 @@ def jugar(nivel_elegido):
                     if vida_jugador <= 0:
                         return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
-        # Balas jugador contra enemigos normales
         for b in balas[:]:
             hit = False
             for e in enemigos.enemies[:]:
@@ -845,7 +910,6 @@ def jugar(nivel_elegido):
             if hit and b in balas:
                 balas.remove(b)
 
-        # Balas jugador contra boss nivel 4
         if boss_activo and boss_hp > 0:
             for b in balas[:]:
                 if b.colliderect(boss_rect):
@@ -858,7 +922,6 @@ def jugar(nivel_elegido):
                         boss_activo = False
                     break
 
-        # Balas jugador contra final boss
         if final_boss_activo and final_boss_hp > 0:
             for b in balas[:]:
                 if b.colliderect(final_boss_rect):
@@ -871,7 +934,6 @@ def jugar(nivel_elegido):
                         final_boss_activo = False
                     break
 
-        # Victoria
         if nivel_elegido == 5:
             if final_boss_aparecio and not final_boss_activo:
                 return pantalla_victoria(nivel_elegido, variables.puntuacion)
@@ -879,7 +941,6 @@ def jugar(nivel_elegido):
             if variables.puntuacion >= objetivo_puntos:
                 return pantalla_victoria(nivel_elegido, variables.puntuacion)
 
-        # Dibujado
         ventana.blit(background_image, (0, 0))
 
         mostrar_jugador = True
@@ -914,7 +975,6 @@ def jugar(nivel_elegido):
         for fb in final_boss_balas:
             pygame.draw.rect(ventana, (255, 0, 0), fb["rect"])
 
-               # Texto combinado de puntuacion
         if nivel_elegido == 5:
             if not final_boss_aparecio:
                 progreso_texto = f"Puntuacion: {variables.puntuacion}/600"
@@ -936,6 +996,8 @@ def jugar(nivel_elegido):
 
         dibujar_barra_vida(ventana, 10, 115, vida_jugador, vida_max)
 
+        pausa_info = variables.font.render("P para pausar", True, WHITE)
+        ventana.blit(pausa_info, (10, 150))
 
         if boss_activo and boss_hp > 0:
             boss_text = variables.font.render(f"Boss HP: {boss_hp}", True, WHITE)

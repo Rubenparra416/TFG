@@ -1,3 +1,5 @@
+import pygame
+
 ANCHO = 1000
 ALTO = 700
 
@@ -8,3 +10,6 @@ RED = (255, 0, 0)
 
 puntuacion=0
 font = None
+
+nivel_desbloqueado = 1
+MAX_NIVELES = 5

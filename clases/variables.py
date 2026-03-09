@@ -11,5 +11,5 @@ RED = (255, 0, 0)
 puntuacion=0
 font = None
 
-nivel_desbloqueado = 1
+nivel_desbloqueado = 5
 MAX_NIVELES = 5

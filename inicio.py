@@ -8,8 +8,6 @@ try:
 except ModuleNotFoundError:
     sys.path.append(str(Path(__file__).resolve().parent))
 
-from clases import personaje, variables, meteoritos, enemigos
-
 import clases.personaje as personaje
 import clases.variables as variables
 import clases.meteoritos as meteoritos
@@ -92,6 +90,26 @@ def escalar_cuadrado(image, side):
 
 
 # ------------------------------------------------------------
+# FUNCION: dibujar_barra_vida
+# ------------------------------------------------------------
+def dibujar_barra_vida(surface, x, y, vida, vida_max, ancho=220, alto=22):
+    porcentaje = max(0, vida) / vida_max
+    ancho_relleno = int(ancho * porcentaje)
+
+    pygame.draw.rect(surface, (60, 60, 60), (x, y, ancho, alto), border_radius=6)
+
+    if porcentaje > 0.6:
+        color = (50, 220, 90)
+    elif porcentaje > 0.3:
+        color = (255, 200, 50)
+    else:
+        color = (220, 60, 60)
+
+    pygame.draw.rect(surface, color, (x, y, ancho_relleno, alto), border_radius=6)
+    pygame.draw.rect(surface, (255, 255, 255), (x, y, ancho, alto), 2, border_radius=6)
+
+
+# ------------------------------------------------------------
 # FUNCION: desbloquear_siguiente_nivel
 # ------------------------------------------------------------
 def desbloquear_siguiente_nivel(nivel_completado):
@@ -122,8 +140,6 @@ enemy_base_image = pygame.image.load("assets/enemigo.png").convert_alpha()
 enemy_big_base_image = pygame.image.load("assets/enemigo2.png").convert_alpha()
 title_image = pygame.image.load("assets/titulo.png").convert_alpha()
 enemy_shooter_image = pygame.image.load("assets/boss.png").convert_alpha()
-#enemy_movil_image = pygame.image.load("assets/enemigo_movil.png").convert_alpha()
-
 
 game_over_image = None
 try:
@@ -141,9 +157,6 @@ meteor_image = escalar_cuadrado(meteor_image, meteoritos.meteor_width)
 enemy_image = escalar_cuadrado(enemy_base_image, 60)
 enemy_big_image = escalar_cuadrado(enemy_big_base_image, 95)
 enemy_shooter_image = escalar_cuadrado(enemy_shooter_image, 130)
-#enemy_movil_image = escalar_cuadrado(enemy_movil_image, 80)
-
-
 
 title_image = pygame.transform.smoothscale(title_image, (1000, 350))
 
@@ -195,7 +208,10 @@ def pantalla_inicio():
             True,
             (230, 230, 230)
         )
-        ventana.blit(info_bloqueo, (variables.ANCHO // 2 - info_bloqueo.get_width() // 2, 255))
+        ventana.blit(
+            info_bloqueo,
+            (variables.ANCHO // 2 - info_bloqueo.get_width() // 2, 255)
+        )
 
         rects_niveles.clear()
 
@@ -223,9 +239,7 @@ def pantalla_inicio():
             pygame.draw.rect(ventana, color_fondo, rect, border_radius=8)
             pygame.draw.rect(ventana, (255, 255, 255), rect, 2, border_radius=8)
 
-            texto = f"Nivel {nivel}"
-
-            texto_nivel = font_nivel.render(texto, True, color_texto)
+            texto_nivel = font_nivel.render(f"Nivel {nivel}", True, color_texto)
             ventana.blit(
                 texto_nivel,
                 (
@@ -271,19 +285,26 @@ def pantalla_inicio():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    nivel_seleccionado = (nivel_seleccionado - 1) % 5
+                    nivel_seleccionado = max(0, nivel_seleccionado - 1)
                 elif event.key == pygame.K_DOWN:
-                    nivel_seleccionado = (nivel_seleccionado + 1) % 5
+                    nivel_seleccionado = min(
+                        variables.nivel_desbloqueado - 1,
+                        nivel_seleccionado + 1
+                    )
                 elif event.key == pygame.K_RETURN:
-                    return niveles[nivel_seleccionado]
+                    nivel_elegido = niveles[nivel_seleccionado]
+                    if nivel_elegido <= variables.nivel_desbloqueado:
+                        return nivel_elegido
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 for i, rect in enumerate(rects_niveles):
-                    if rect.collidepoint(event.pos):
+                    if rect.collidepoint(event.pos) and niveles[i] <= variables.nivel_desbloqueado:
                         nivel_seleccionado = i
 
                 if boton_jugar.collidepoint(event.pos):
-                    return niveles[nivel_seleccionado]
+                    nivel_elegido = niveles[nivel_seleccionado]
+                    if nivel_elegido <= variables.nivel_desbloqueado:
+                        return nivel_elegido
 
 
 # ------------------------------------------------------------
@@ -446,23 +467,6 @@ def pantalla_victoria(nivel, puntuacion):
             (variables.ANCHO // 2 - texto_nivel.get_width() // 2, 290),
         )
 
-        if nivel < 5:
-            texto_siguiente = font_small.render(
-                "Pulsa N para pasar al siguiente nivel", True, (255, 220, 80)
-            )
-            ventana.blit(
-                texto_siguiente,
-                (variables.ANCHO // 2 - texto_siguiente.get_width() // 2, 390),
-            )
-        else:
-            texto_fin = font_small.render(
-                "Ya no quedan mas niveles galacticos", True, (255, 220, 80)
-            )
-            ventana.blit(
-                texto_fin,
-                (variables.ANCHO // 2 - texto_fin.get_width() // 2, 390),
-            )
-
         if nivel < variables.MAX_NIVELES:
             texto_desbloqueado = font_info.render(
                 f"Has desbloqueado el nivel {min(nivel + 1, variables.MAX_NIVELES)}",
@@ -489,7 +493,10 @@ def pantalla_victoria(nivel, puntuacion):
                 True,
                 (255, 220, 80)
             )
-            ventana.blit(texto_fin, (variables.ANCHO // 2 - texto_fin.get_width() // 2, 390))
+            ventana.blit(
+                texto_fin,
+                (variables.ANCHO // 2 - texto_fin.get_width() // 2, 390)
+            )
 
         texto_reiniciar = font_small.render(
             "Pulsa R para repetir este nivel", True, (220, 220, 220)
@@ -561,9 +568,13 @@ def jugar(nivel_elegido):
     ultimo_disparo = 0
     pausa = False
 
-    # ------------------------------------------------------------
-    # ENEMIGO GRANDE NIVEL 4
-    # ------------------------------------------------------------
+    # Vida del jugador
+    vida_max = 100
+    vida_jugador = vida_max
+    ultimo_golpe = 0
+    invulnerabilidad_ms = 800
+
+    # Boss nivel 4
     boss_activo = nivel_elegido == 4
     boss_hp = 8
     boss_rect = pygame.Rect(variables.ANCHO // 2 - 65, 40, 130, 130)
@@ -574,12 +585,10 @@ def jugar(nivel_elegido):
     boss_cooldown = 900
     ultimo_disparo_boss = 0
 
-    # ------------------------------------------------------------
-    # FINAL BOSS NIVEL 5 (aparece al llegar a 600 puntos)
-    # ------------------------------------------------------------
+    # Final boss nivel 5
     final_boss_aparecio = False
     final_boss_activo = False
-    final_boss_hp = 30
+    final_boss_hp = 5
     final_boss_rect = pygame.Rect(variables.ANCHO // 2 - 90, 30, 180, 180)
     final_boss_dir = 5
     final_boss_balas = []
@@ -623,7 +632,14 @@ def jugar(nivel_elegido):
 
         if pausa:
             ventana.blit(background_image, (0, 0))
-            ventana.blit(player_image, (personaje.Personaje.player.x, personaje.Personaje.player.y))
+
+            mostrar_jugador = True
+            if ahora - ultimo_golpe < invulnerabilidad_ms:
+                if (ahora // 100) % 2 == 0:
+                    mostrar_jugador = False
+
+            if mostrar_jugador:
+                ventana.blit(player_image, (personaje.Personaje.player.x, personaje.Personaje.player.y))
 
             for meteor in meteoritos.meteors:
                 ventana.blit(meteor_image, (meteor.x, meteor.y))
@@ -647,7 +663,7 @@ def jugar(nivel_elegido):
                 pygame.draw.rect(ventana, (255, 60, 60), bb)
 
             for fb in final_boss_balas:
-                pygame.draw.rect(ventana, (255, 0, 0), fb)
+                pygame.draw.rect(ventana, (255, 0, 0), fb["rect"])
 
             pausa_text = variables.font.render(
                 "Juego pausado - Presiona P para continuar",
@@ -659,14 +675,14 @@ def jugar(nivel_elegido):
             pygame.display.flip()
             continue
 
-        # Aparición del final boss en nivel 5 al llegar a 600 puntos
+        # Aparicion del final boss
         if nivel_elegido == 5 and variables.puntuacion >= 600 and not final_boss_aparecio:
             final_boss_aparecio = True
             final_boss_activo = True
             meteoritos.meteors.clear()
             enemigos.enemies.clear()
 
-        # Meteoritos
+        # Meteoritos y enemigos normales solo si no esta activo el final boss
         if not final_boss_activo:
             if len(meteoritos.meteors) < 5:
                 meteor_x = random.randint(0, variables.ANCHO - meteoritos.meteor_width)
@@ -725,48 +741,96 @@ def jugar(nivel_elegido):
                 final_boss_dir *= -1
 
             if ahora - ultimo_disparo_final_boss >= final_boss_cooldown:
-                # Disparo triple
                 centro_x = final_boss_rect.centerx
                 y = final_boss_rect.bottom
-                final_boss_balas.append(pygame.Rect(centro_x - 30, y, final_boss_bala_w, final_boss_bala_h))
-                final_boss_balas.append(pygame.Rect(centro_x, y, final_boss_bala_w, final_boss_bala_h))
-                final_boss_balas.append(pygame.Rect(centro_x + 30, y, final_boss_bala_w, final_boss_bala_h))
+                velocidades_x = [-4, 0, 4]
+
+                for i, vx in enumerate(velocidades_x):
+                    x = centro_x - 20 + i * 20
+                    final_boss_balas.append({
+                        "rect": pygame.Rect(x, y, final_boss_bala_w, final_boss_bala_h),
+                        "vel_x": vx,
+                        "vel_y": final_boss_bala_speed
+                    })
+
                 ultimo_disparo_final_boss = ahora
 
         for fb in final_boss_balas[:]:
-            fb.y += final_boss_bala_speed
-            if fb.top > variables.ALTO:
+            fb["rect"].x += fb["vel_x"]
+            fb["rect"].y += fb["vel_y"]
+
+            if (
+                fb["rect"].top > variables.ALTO
+                or fb["rect"].right < 0
+                or fb["rect"].left > variables.ANCHO
+            ):
                 final_boss_balas.remove(fb)
 
         # Colisiones jugador con meteoritos
-        for meteor in meteoritos.meteors:
+        for meteor in meteoritos.meteors[:]:
             if personaje.Personaje.hitbox.colliderect(meteor):
-                return pantalla_game_over(nivel_elegido, variables.puntuacion)
+                if ahora - ultimo_golpe >= invulnerabilidad_ms:
+                    vida_jugador -= 20
+                    ultimo_golpe = ahora
+                    if meteor in meteoritos.meteors:
+                        meteoritos.meteors.remove(meteor)
+
+                    if vida_jugador <= 0:
+                        return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
         # Colisiones jugador con enemigos normales
-        for e in enemigos.enemies:
+        for e in enemigos.enemies[:]:
             if personaje.Personaje.hitbox.colliderect(e.rect):
-                return pantalla_game_over(nivel_elegido, variables.puntuacion)
+                if ahora - ultimo_golpe >= invulnerabilidad_ms:
+                    vida_jugador -= 25
+                    ultimo_golpe = ahora
+                    if e in enemigos.enemies:
+                        enemigos.enemies.remove(e)
 
-        # Colisión jugador con boss nivel 4
+                    if vida_jugador <= 0:
+                        return pantalla_game_over(nivel_elegido, variables.puntuacion)
+
+        # Colision jugador con boss nivel 4
         if boss_activo and boss_hp > 0 and personaje.Personaje.hitbox.colliderect(boss_rect):
-            return pantalla_game_over(nivel_elegido, variables.puntuacion)
+            if ahora - ultimo_golpe >= invulnerabilidad_ms:
+                vida_jugador -= 35
+                ultimo_golpe = ahora
+                if vida_jugador <= 0:
+                    return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
-        # Colisión balas boss nivel 4 con jugador
-        for bb in boss_balas:
+        # Colision balas boss nivel 4 con jugador
+        for bb in boss_balas[:]:
             if personaje.Personaje.hitbox.colliderect(bb):
-                return pantalla_game_over(nivel_elegido, variables.puntuacion)
+                if ahora - ultimo_golpe >= invulnerabilidad_ms:
+                    vida_jugador -= 15
+                    ultimo_golpe = ahora
+                    if bb in boss_balas:
+                        boss_balas.remove(bb)
 
-        # Colisión jugador con final boss
+                    if vida_jugador <= 0:
+                        return pantalla_game_over(nivel_elegido, variables.puntuacion)
+
+        # Colision jugador con final boss
         if final_boss_activo and final_boss_hp > 0 and personaje.Personaje.hitbox.colliderect(final_boss_rect):
-            return pantalla_game_over(nivel_elegido, variables.puntuacion)
+            if ahora - ultimo_golpe >= invulnerabilidad_ms:
+                vida_jugador -= 40
+                ultimo_golpe = ahora
+                if vida_jugador <= 0:
+                    return pantalla_game_over(nivel_elegido, variables.puntuacion)
 
-        # Colisión balas final boss con jugador
-        for fb in final_boss_balas:
-            if personaje.Personaje.hitbox.colliderect(fb):
-                return pantalla_game_over(nivel_elegido, variables.puntuacion)
+        # Colision balas final boss con jugador
+        for fb in final_boss_balas[:]:
+            if personaje.Personaje.hitbox.colliderect(fb["rect"]):
+                if ahora - ultimo_golpe >= invulnerabilidad_ms:
+                    vida_jugador -= 20
+                    ultimo_golpe = ahora
+                    if fb in final_boss_balas:
+                        final_boss_balas.remove(fb)
 
-        # Balas del jugador contra enemigos normales
+                    if vida_jugador <= 0:
+                        return pantalla_game_over(nivel_elegido, variables.puntuacion)
+
+        # Balas jugador contra enemigos normales
         for b in balas[:]:
             hit = False
             for e in enemigos.enemies[:]:
@@ -781,7 +845,7 @@ def jugar(nivel_elegido):
             if hit and b in balas:
                 balas.remove(b)
 
-        # Balas del jugador contra boss nivel 4
+        # Balas jugador contra boss nivel 4
         if boss_activo and boss_hp > 0:
             for b in balas[:]:
                 if b.colliderect(boss_rect):
@@ -794,7 +858,7 @@ def jugar(nivel_elegido):
                         boss_activo = False
                     break
 
-        # Balas del jugador contra final boss
+        # Balas jugador contra final boss
         if final_boss_activo and final_boss_hp > 0:
             for b in balas[:]:
                 if b.colliderect(final_boss_rect):
@@ -815,8 +879,16 @@ def jugar(nivel_elegido):
             if variables.puntuacion >= objetivo_puntos:
                 return pantalla_victoria(nivel_elegido, variables.puntuacion)
 
+        # Dibujado
         ventana.blit(background_image, (0, 0))
-        ventana.blit(player_image, (personaje.Personaje.player.x, personaje.Personaje.player.y))
+
+        mostrar_jugador = True
+        if ahora - ultimo_golpe < invulnerabilidad_ms:
+            if (ahora // 100) % 2 == 0:
+                mostrar_jugador = False
+
+        if mostrar_jugador:
+            ventana.blit(player_image, (personaje.Personaje.player.x, personaje.Personaje.player.y))
 
         for meteor in meteoritos.meteors:
             ventana.blit(meteor_image, (meteor.x, meteor.y))
@@ -840,40 +912,40 @@ def jugar(nivel_elegido):
             pygame.draw.rect(ventana, (255, 60, 60), bb)
 
         for fb in final_boss_balas:
-            pygame.draw.rect(ventana, (255, 0, 0), fb)
+            pygame.draw.rect(ventana, (255, 0, 0), fb["rect"])
 
-        puntuacion_text = variables.font.render(
-            f"Puntuacion: {variables.puntuacion}", True, WHITE
-        )
-        ventana.blit(puntuacion_text, (10, 10))
+               # Texto combinado de puntuacion
+        if nivel_elegido == 5:
+            if not final_boss_aparecio:
+                progreso_texto = f"Puntuacion: {variables.puntuacion}/600"
+            else:
+                progreso_texto = f"Puntuacion: {variables.puntuacion} - Final Boss"
+        else:
+            progreso_texto = f"Puntuacion: {variables.puntuacion}/{objetivo_puntos}"
+
+        progreso_render = variables.font.render(progreso_texto, True, WHITE)
+        ventana.blit(progreso_render, (10, 10))
 
         nivel_text = variables.font.render(f"Nivel: {nivel_elegido}", True, WHITE)
         ventana.blit(nivel_text, (10, 45))
 
-        objetivo_mostrar = "Final Boss" if nivel_elegido == 5 else str(objetivo_puntos)
-        objetivo_text = variables.font.render(
-            f"Objetivo: {objetivo_mostrar}", True, WHITE
+        vida_text = variables.font.render(
+            f"Vida: {vida_jugador}/{vida_max}", True, WHITE
         )
-        ventana.blit(objetivo_text, (10, 80))
+        ventana.blit(vida_text, (10, 80))
 
-        pausa_info = variables.font.render("P para pausar", True, WHITE)
-        ventana.blit(pausa_info, (10, 115))
+        dibujar_barra_vida(ventana, 10, 115, vida_jugador, vida_max)
+
 
         if boss_activo and boss_hp > 0:
             boss_text = variables.font.render(f"Boss HP: {boss_hp}", True, WHITE)
-            ventana.blit(boss_text, (10, 150))
+            ventana.blit(boss_text, (10, 185))
 
         if final_boss_activo and final_boss_hp > 0:
             final_boss_text = variables.font.render(
                 f"Final Boss HP: {final_boss_hp}", True, WHITE
             )
-            ventana.blit(final_boss_text, (10, 185))
-
-        if nivel_elegido == 5 and not final_boss_aparecio:
-            aviso_boss = variables.font.render(
-                "El Final Boss aparece al llegar a 600 puntos", True, WHITE
-            )
-            ventana.blit(aviso_boss, (10, 220))
+            ventana.blit(final_boss_text, (10, 220))
 
         pygame.display.flip()
 

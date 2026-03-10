@@ -21,6 +21,41 @@ class GestorAudio:
         "assets/musica/nivel1.mp3",
     ]
 
+    LEVEL2_MUSIC_FILES = [
+        "assets/nivel2.ogg",
+        "assets/musica/nivel2.mp3",
+        "assets/level2.ogg",
+        "assets/level2.mp3",
+        "assets/musica/nivel2.ogg",
+        "assets/musica/nivel1.mp3",
+    ]
+
+    LEVEL3_MUSIC_FILES = [
+        "assets/nivel3.ogg",
+        "assets/musica/nivel3.mp3",
+        "assets/level3.ogg",
+        "assets/level3.mp3",
+        "assets/musica/nivel3.ogg",
+        "assets/musica/nivel3.mp3",
+    ]
+    LEVEL4_MUSIC_FILES = [
+        "assets/nivel4.ogg",
+        "assets/musica/nivel4.mp3",
+        "assets/level4.ogg",
+        "assets/level4.mp3",
+        "assets/musica/nivel4.ogg",
+        "assets/musica/nivel4.mp3",
+    ] 
+    
+    LEVEL5_MUSIC_FILES = [
+        "assets/nivel5.ogg",
+        "assets/musica/nivel5.mp3",
+        "assets/level5.ogg",
+        "assets/level5.mp3",
+        "assets/musica/nivel5.ogg",
+        "assets/musica/nivel5.mp3",
+    ] 
+
     GAME_OVER_MUSIC_FILES = [
         "assets/musica/imperio.ogg",
         "assets/musica/imperio.mp3",

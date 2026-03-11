@@ -22,7 +22,189 @@ class Juego:
         self.WHITE = getattr(variables, "WHITE", (255, 255, 255))
 
         self.powerups = PowerUpManager(variables.ANCHO, variables.ALTO)
+        self.powerup_siguiente_nivel = None
 
+    # ---------------------------------------------------------
+    # MISIONES
+    # ---------------------------------------------------------
+    def crear_misiones_nivel(self, nivel):
+     if nivel == 1:
+        return [
+            {"id": "enemigos", "texto": "Elimina 6 enemigos", "objetivo": 6},
+            {"id": "vida_final", "texto": "Termina con al menos 40 de vida", "objetivo": 40},
+            {"id": "puntos", "texto": "Consigue 180 puntos", "objetivo": 180},
+        ]
+     elif nivel == 2:
+        return [
+            {"id": "enemigos", "texto": "Elimina 8 enemigos", "objetivo": 8},
+            {"id": "powerups", "texto": "Recoge 1 power-up", "objetivo": 1},
+            {"id": "puntos", "texto": "Consigue 260 puntos", "objetivo": 260},
+        ]
+     elif nivel == 3:
+        return [
+            {"id": "enemigos", "texto": "Elimina 10 enemigos", "objetivo": 10},
+            {"id": "sin_muchos_golpes", "texto": "Recibe como maximo 3 golpes", "objetivo": 3},
+            {"id": "puntos", "texto": "Consigue 300 puntos", "objetivo": 300},
+        ]
+     elif nivel == 4:
+        return [
+            {"id": "enemigos", "texto": "Elimina 12 enemigos", "objetivo": 12},
+            {"id": "supervivencia", "texto": "Sobrevive 45 segundos", "objetivo": 45},
+            {"id": "vida_final", "texto": "Termina con al menos 35 de vida", "objetivo": 35},
+        ]
+     elif nivel == 5:
+        return [
+            {"id": "enemigos", "texto": "Elimina 14 enemigos", "objetivo": 14},
+            {"id": "sin_muchos_golpes", "texto": "Recibe como maximo 4 golpes", "objetivo": 4},
+            {"id": "puntos", "texto": "Consigue 500 puntos", "objetivo": 500},
+        ]
+     else:
+        return []
+
+    def iniciar_progreso_misiones(self):
+        return {
+            "enemigos": 0,
+            "powerups": 0,
+            "golpes": 0,
+            "segundos": 0,
+        }
+
+    def mision_cumplida(self, mision, progreso, vida_jugador, puntuacion):
+        mid = mision["id"]
+        objetivo = mision["objetivo"]
+
+        if mid == "meteoritos":
+            return progreso["meteoritos"] >= objetivo
+        elif mid == "enemigos":
+            return progreso["enemigos"] >= objetivo
+        elif mid == "powerups":
+            return progreso["powerups"] >= objetivo
+        elif mid == "sin_muchos_golpes":
+            return progreso["golpes"] <= objetivo
+        elif mid == "puntos":
+            return puntuacion >= objetivo
+        elif mid == "supervivencia":
+            return progreso["segundos"] >= objetivo
+        elif mid == "vida_final":
+            return vida_jugador >= objetivo
+
+        return False
+
+    def todas_misiones_completadas(self, misiones, progreso, vida_jugador, puntuacion):
+        for mision in misiones:
+            if not self.mision_cumplida(mision, progreso, vida_jugador, puntuacion):
+                return False
+        return True
+
+    def dibujar_misiones(self, misiones, progreso, vida_jugador, puntuacion, x=10, y=255):
+     font_misiones = pygame.font.SysFont(None, 24)
+     y_actual = y
+
+     for mision in misiones:
+        cumplida = self.mision_cumplida(mision, progreso, vida_jugador, puntuacion)
+        prefijo = "[OK]" if cumplida else "[ ]"
+
+        mid = mision["id"]
+        objetivo = mision["objetivo"]
+
+        if mid == "enemigos":
+            texto = f"{prefijo} {mision['texto']} ({progreso['enemigos']}/{objetivo})"
+        elif mid == "powerups":
+            texto = f"{prefijo} {mision['texto']} ({progreso['powerups']}/{objetivo})"
+        elif mid == "sin_muchos_golpes":
+            texto = f"{prefijo} {mision['texto']} ({progreso['golpes']}/{objetivo})"
+        elif mid == "puntos":
+            texto = f"{prefijo} {mision['texto']} ({puntuacion}/{objetivo})"
+        elif mid == "supervivencia":
+            texto = f"{prefijo} {mision['texto']} ({progreso['segundos']}/{objetivo})"
+        elif mid == "vida_final":
+            texto = f"{prefijo} {mision['texto']} ({vida_jugador}/{objetivo})"
+        else:
+            texto = f"{prefijo} {mision['texto']}"
+
+        render = font_misiones.render(texto, True, self.WHITE)
+        self.ventana.blit(render, (x, y_actual))
+        y_actual += 26
+
+    # ---------------------------------------------------------
+    # RECOMPENSA ENTRE NIVELES
+    # ---------------------------------------------------------
+    def pantalla_eleccion_powerup(self):
+        opciones = [
+            ("speed", "Velocidad +"),
+            ("double", "Doble disparo"),
+            ("chaos", "Disparo caotico"),
+        ]
+
+        seleccion = 0
+
+        while True:
+            self.clock.tick(60)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return None
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key in (pygame.K_LEFT, pygame.K_a):
+                        seleccion = (seleccion - 1) % len(opciones)
+                    elif event.key in (pygame.K_RIGHT, pygame.K_d):
+                        seleccion = (seleccion + 1) % len(opciones)
+                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        return opciones[seleccion][0]
+                    elif event.key == pygame.K_1:
+                        return opciones[0][0]
+                    elif event.key == pygame.K_2:
+                        return opciones[1][0]
+                    elif event.key == pygame.K_3:
+                        return opciones[2][0]
+
+            self.ventana.blit(self.recursos.background_image, (0, 0))
+
+            titulo = variables.font.render("Has completado todas las misiones", True, self.WHITE)
+            subtitulo = variables.font.render("Elige 1 power-up para el siguiente nivel", True, self.WHITE)
+
+            self.ventana.blit(titulo, titulo.get_rect(center=(variables.ANCHO // 2, 120)))
+            self.ventana.blit(subtitulo, subtitulo.get_rect(center=(variables.ANCHO // 2, 160)))
+
+            ancho_caja = 220
+            alto_caja = 90
+            espacio = 30
+            total_ancho = len(opciones) * ancho_caja + (len(opciones) - 1) * espacio
+            inicio_x = (variables.ANCHO - total_ancho) // 2
+            y = 250
+
+            for i, (_, texto) in enumerate(opciones):
+                x = inicio_x + i * (ancho_caja + espacio)
+                rect = pygame.Rect(x, y, ancho_caja, alto_caja)
+
+                color_borde = (255, 255, 0) if i == seleccion else (255, 255, 255)
+                pygame.draw.rect(self.ventana, (20, 20, 40), rect)
+                pygame.draw.rect(self.ventana, color_borde, rect, 3)
+
+                numero = variables.font.render(f"{i+1}", True, self.WHITE)
+                nombre = variables.font.render(texto, True, self.WHITE)
+
+                self.ventana.blit(numero, numero.get_rect(center=(rect.centerx, rect.y + 20)))
+                self.ventana.blit(nombre, nombre.get_rect(center=(rect.centerx, rect.y + 55)))
+
+            ayuda = variables.font.render("Flechas o A/D para mover - Enter para elegir", True, self.WHITE)
+            self.ventana.blit(ayuda, ayuda.get_rect(center=(variables.ANCHO // 2, 400)))
+
+            pygame.display.flip()
+
+    def aplicar_powerup_inicio_nivel(self, ahora):
+        if self.powerup_siguiente_nivel is None:
+            return
+
+        if self.powerup_siguiente_nivel in self.powerups.active_until:
+            self.powerups.active_until[self.powerup_siguiente_nivel] = ahora + self.powerups.defs[self.powerup_siguiente_nivel]["duracion_ms"]
+
+        self.powerup_siguiente_nivel = None
+
+    # ---------------------------------------------------------
+    # JUEGO
+    # ---------------------------------------------------------
     def jugar(self, nivel_elegido):
         if nivel_elegido == 1:
             self.audio.reproducir_musica(self.audio.LEVEL1_MUSIC_FILES, "nivel 1")
@@ -50,6 +232,13 @@ class Juego:
         personaje.Personaje.update_hitbox()
 
         self.powerups.reset()
+
+        ahora_inicio = pygame.time.get_ticks()
+        self.aplicar_powerup_inicio_nivel(ahora_inicio)
+
+        misiones = self.crear_misiones_nivel(nivel_elegido)
+        progreso_misiones = self.iniciar_progreso_misiones()
+        tiempo_inicio_nivel = pygame.time.get_ticks()
 
         if nivel_elegido == 1:
             velocidad_meteoritos = 4
@@ -112,6 +301,7 @@ class Juego:
             self.clock.tick(60)
             ahora = pygame.time.get_ticks()
             escudo_activo = self.powerups.is_active("shield", ahora)
+            progreso_misiones["segundos"] = (ahora - tiempo_inicio_nivel) // 1000
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -149,7 +339,12 @@ class Juego:
             personaje.Personaje.update_hitbox()
 
             if not pausa:
+                recogidos_antes = len(self.powerups.items)
                 self.powerups.update_and_collect(personaje.Personaje.hitbox, ahora)
+                recogidos_despues = len(self.powerups.items)
+
+                if recogidos_despues < recogidos_antes:
+                    progreso_misiones["powerups"] += 1
 
             if keys[pygame.K_SPACE] and (ahora - ultimo_disparo) >= cooldown_ms and not pausa:
                 player = personaje.Personaje.player
@@ -185,7 +380,6 @@ class Juego:
                     })
 
                 ultimo_disparo = ahora
-
             if pausa:
                 self.ventana.blit(self.recursos.background_image, (0, 0))
 
@@ -233,21 +427,44 @@ class Juego:
                     pygame.draw.rect(self.ventana, (255, 0, 0), fb["rect"])
 
                 self.powerups.draw_items(self.ventana)
-                self.powerups.draw_last_powerup_hud(
-                    self.ventana,
-                    variables.font,
-                    variables.ANCHO - 10,
-                    10,
-                    ahora
-                )
 
                 pausa_text = variables.font.render(
-                    "Juego pausado - Presiona P para continuar",
+                    "Juego pausado",
                     True,
                     (255, 255, 255),
                 )
-                text_rect = pausa_text.get_rect(center=(variables.ANCHO // 2, variables.ALTO // 2))
+                text_rect = pausa_text.get_rect(center=(variables.ANCHO // 2, variables.ALTO // 2 - 80))
                 self.ventana.blit(pausa_text, text_rect)
+
+                info_text = variables.font.render(
+                    "   ",
+                    True,
+                    (255, 255, 255),
+                )
+                info_rect = info_text.get_rect(center=(variables.ANCHO // 2, variables.ALTO // 2 - 40))
+                self.ventana.blit(info_text, info_rect)
+
+                panel_w = 760
+                panel_h = 230
+                panel_x = (variables.ANCHO - panel_w) // 2
+                panel_y = (variables.ALTO - panel_h) // 2 + 70
+
+                panel_rect = pygame.Rect(panel_x, panel_y, panel_w, panel_h)
+                pygame.draw.rect(self.ventana, (15, 15, 35), panel_rect)
+                pygame.draw.rect(self.ventana, (255, 255, 255), panel_rect, 3)
+
+                font_misiones = pygame.font.SysFont(None, 24)
+                titulo_misiones = variables.font.render("Misiones del nivel", True, self.WHITE)
+                self.ventana.blit(titulo_misiones, (panel_x + 20, panel_y + 15))
+
+                self.dibujar_misiones(
+                    misiones,
+                    progreso_misiones,
+                    vida_jugador,
+                    variables.puntuacion,
+                    x=panel_x + 20,
+                    y=panel_y + 75
+                )
 
                 pygame.display.flip()
                 continue
@@ -352,6 +569,7 @@ class Juego:
                 if personaje.Personaje.hitbox.colliderect(meteor):
                     if not escudo_activo and ahora - ultimo_golpe >= invulnerabilidad_ms:
                         vida_jugador -= 20
+                        progreso_misiones["golpes"] += 1
                         ultimo_golpe = ahora
                         meteoritos.meteors.remove(meteor)
 
@@ -362,6 +580,7 @@ class Juego:
                 if personaje.Personaje.hitbox.colliderect(e.rect):
                     if not escudo_activo and ahora - ultimo_golpe >= invulnerabilidad_ms:
                         vida_jugador -= 25
+                        progreso_misiones["golpes"] += 1
                         ultimo_golpe = ahora
                         enemigos.enemies.remove(e)
 
@@ -371,6 +590,7 @@ class Juego:
             if boss_activo and boss_hp > 0 and personaje.Personaje.hitbox.colliderect(boss_rect):
                 if not escudo_activo and ahora - ultimo_golpe >= invulnerabilidad_ms:
                     vida_jugador -= 35
+                    progreso_misiones["golpes"] += 1
                     ultimo_golpe = ahora
                     if vida_jugador <= 0:
                         return self.pantallas.pantalla_game_over(nivel_elegido, variables.puntuacion)
@@ -379,6 +599,7 @@ class Juego:
                 if personaje.Personaje.hitbox.colliderect(bb):
                     if not escudo_activo and ahora - ultimo_golpe >= invulnerabilidad_ms:
                         vida_jugador -= 15
+                        progreso_misiones["golpes"] += 1
                         ultimo_golpe = ahora
                         boss_balas.remove(bb)
 
@@ -388,6 +609,7 @@ class Juego:
             if final_boss_activo and final_boss_hp > 0 and personaje.Personaje.hitbox.colliderect(final_boss_rect):
                 if not escudo_activo and ahora - ultimo_golpe >= invulnerabilidad_ms:
                     vida_jugador -= 40
+                    progreso_misiones["golpes"] += 1
                     ultimo_golpe = ahora
                     if vida_jugador <= 0:
                         return self.pantallas.pantalla_game_over(nivel_elegido, variables.puntuacion)
@@ -396,6 +618,7 @@ class Juego:
                 if personaje.Personaje.hitbox.colliderect(fb["rect"]):
                     if not escudo_activo and ahora - ultimo_golpe >= invulnerabilidad_ms:
                         vida_jugador -= 20
+                        progreso_misiones["golpes"] += 1
                         ultimo_golpe = ahora
                         final_boss_balas.remove(fb)
 
@@ -414,12 +637,15 @@ class Juego:
                             print("Enemigo destruido:", e.tipo, e.rect)
                             self.powerups.try_spawn_from_enemy(e.rect, e.tipo)
                             enemigos.enemies.remove(e)
+                            progreso_misiones["enemigos"] += 1
                             variables.puntuacion += 60 if e.tipo == "grande" else 20
 
                         break
 
                 if hit and b in balas:
                     balas.remove(b)
+
+           
 
             if boss_activo and boss_hp > 0:
                 for b in balas[:]:
@@ -445,15 +671,23 @@ class Juego:
                             final_boss_activo = False
                         break
 
+            nivel_superado = False
+
             if nivel_elegido == 4:
                 if boss_aparecio and not boss_activo:
-                    return self.pantallas.pantalla_victoria(nivel_elegido, variables.puntuacion)
+                    nivel_superado = True
             elif nivel_elegido == 5:
                 if final_boss_aparecio and not final_boss_activo:
-                    return self.pantallas.pantalla_victoria(nivel_elegido, variables.puntuacion)
+                    nivel_superado = True
             else:
                 if variables.puntuacion >= objetivo_puntos:
-                    return self.pantallas.pantalla_victoria(nivel_elegido, variables.puntuacion)
+                    nivel_superado = True
+
+            if nivel_superado:
+               if self.todas_misiones_completadas(misiones, progreso_misiones, vida_jugador, variables.puntuacion):
+                self.powerup_siguiente_nivel = random.choice(["speed", "double", "chaos", "shield"])
+
+                return self.pantallas.pantalla_victoria(nivel_elegido, variables.puntuacion)
 
             self.ventana.blit(self.recursos.background_image, (0, 0))
 
@@ -501,13 +735,6 @@ class Juego:
                 pygame.draw.rect(self.ventana, (255, 0, 0), fb["rect"])
 
             self.powerups.draw_items(self.ventana)
-            self.powerups.draw_last_powerup_hud(
-                self.ventana,
-                variables.font,
-                variables.ANCHO - 10,
-                10,
-                ahora
-            )
 
             if nivel_elegido == 4:
                 if not boss_aparecio:
@@ -547,5 +774,14 @@ class Juego:
                     f"Final Boss HP: {final_boss_hp}", True, self.WHITE
                 )
                 self.ventana.blit(final_boss_text, (10, 220))
+
+
+            if self.powerup_siguiente_nivel is not None:
+                texto_bonus = variables.font.render(
+                    f"Bonus siguiente nivel: {self.powerup_siguiente_nivel}",
+                    True,
+                    self.WHITE
+                )
+                self.ventana.blit(texto_bonus, (10, variables.ALTO - 40))
 
             pygame.display.flip()

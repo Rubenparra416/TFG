@@ -26,6 +26,12 @@ class PowerUpManager:
                 "color": (255, 160, 70),
                 "letter": "C",
             },
+            "shield": {
+                "label": "Escudo",
+                "duracion_ms": 3000,
+                "color": (120, 180, 255),
+                "letter": "S",
+            },
         }
 
         self.items = []
@@ -33,6 +39,7 @@ class PowerUpManager:
             "speed": 0,
             "double": 0,
             "chaos": 0,
+            "shield": 0,
         }
         self.ultimo_powerup = None
 
@@ -49,9 +56,6 @@ class PowerUpManager:
         return 3 if self.is_active("speed", now_ticks) else 0
 
     def try_spawn_from_enemy(self, enemy_rect, enemy_type="normal"):
-        """
-        Probabilidad de soltar powerup al destruir enemigo.
-        """
         prob = 0.30 if enemy_type == "grande" else 0.18
 
         if random.random() > prob:
@@ -75,9 +79,6 @@ class PowerUpManager:
         print(f"PowerUp creado: {kind} en ({rect.x}, {rect.y})")
 
     def spawn_debug(self, kind="double"):
-        """
-        Crea un powerup para pruebas con la tecla O.
-        """
         rect = pygame.Rect(self.ancho // 2 - 20, 100, 40, 40)
         self.items.append({
             "tipo": kind,

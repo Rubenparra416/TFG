@@ -111,6 +111,7 @@ class Juego:
         while True:
             self.clock.tick(60)
             ahora = pygame.time.get_ticks()
+            escudo_activo = self.powerups.is_active("shield", ahora)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -122,6 +123,15 @@ class Juego:
 
                     elif event.key == pygame.K_o:
                         self.powerups.spawn_debug("double")
+
+                    elif event.key == pygame.K_1:
+                        self.powerups.spawn_debug("speed")
+                    elif event.key == pygame.K_2:
+                        self.powerups.spawn_debug("double")
+                    elif event.key == pygame.K_3:
+                        self.powerups.spawn_debug("chaos")
+                    elif event.key == pygame.K_4:
+                        self.powerups.spawn_debug("shield")
 
             keys = pygame.key.get_pressed()
             speed = personaje.Personaje.player_speed + self.powerups.get_speed_bonus(ahora)
@@ -188,6 +198,15 @@ class Juego:
                         self.recursos.player_image,
                         (personaje.Personaje.player.x, personaje.Personaje.player.y)
                     )
+
+                    if escudo_activo:
+                        pygame.draw.circle(
+                            self.ventana,
+                            (120, 180, 255),
+                            personaje.Personaje.player.center,
+                            max(personaje.Personaje.player.width, personaje.Personaje.player.height) // 2 + 12,
+                            3
+                        )
 
                 for meteor in meteoritos.meteors:
                     self.ventana.blit(self.recursos.meteor_image, (meteor.x, meteor.y))
@@ -332,7 +351,7 @@ class Juego:
 
             for meteor in meteoritos.meteors[:]:
                 if personaje.Personaje.hitbox.colliderect(meteor):
-                    if ahora - ultimo_golpe >= invulnerabilidad_ms:
+                    if not escudo_activo and ahora - ultimo_golpe >= invulnerabilidad_ms:
                         vida_jugador -= 20
                         ultimo_golpe = ahora
                         meteoritos.meteors.remove(meteor)
@@ -342,7 +361,7 @@ class Juego:
 
             for e in enemigos.enemies[:]:
                 if personaje.Personaje.hitbox.colliderect(e.rect):
-                    if ahora - ultimo_golpe >= invulnerabilidad_ms:
+                    if not escudo_activo and ahora - ultimo_golpe >= invulnerabilidad_ms:
                         vida_jugador -= 25
                         ultimo_golpe = ahora
                         enemigos.enemies.remove(e)
@@ -351,7 +370,7 @@ class Juego:
                             return self.pantallas.pantalla_game_over(nivel_elegido, variables.puntuacion)
 
             if boss_activo and boss_hp > 0 and personaje.Personaje.hitbox.colliderect(boss_rect):
-                if ahora - ultimo_golpe >= invulnerabilidad_ms:
+                if not escudo_activo and ahora - ultimo_golpe >= invulnerabilidad_ms:
                     vida_jugador -= 35
                     ultimo_golpe = ahora
                     if vida_jugador <= 0:
@@ -359,7 +378,7 @@ class Juego:
 
             for bb in boss_balas[:]:
                 if personaje.Personaje.hitbox.colliderect(bb):
-                    if ahora - ultimo_golpe >= invulnerabilidad_ms:
+                    if not escudo_activo and ahora - ultimo_golpe >= invulnerabilidad_ms:
                         vida_jugador -= 15
                         ultimo_golpe = ahora
                         boss_balas.remove(bb)
@@ -368,7 +387,7 @@ class Juego:
                             return self.pantallas.pantalla_game_over(nivel_elegido, variables.puntuacion)
 
             if final_boss_activo and final_boss_hp > 0 and personaje.Personaje.hitbox.colliderect(final_boss_rect):
-                if ahora - ultimo_golpe >= invulnerabilidad_ms:
+                if not escudo_activo and ahora - ultimo_golpe >= invulnerabilidad_ms:
                     vida_jugador -= 40
                     ultimo_golpe = ahora
                     if vida_jugador <= 0:
@@ -376,7 +395,7 @@ class Juego:
 
             for fb in final_boss_balas[:]:
                 if personaje.Personaje.hitbox.colliderect(fb["rect"]):
-                    if ahora - ultimo_golpe >= invulnerabilidad_ms:
+                    if not escudo_activo and ahora - ultimo_golpe >= invulnerabilidad_ms:
                         vida_jugador -= 20
                         ultimo_golpe = ahora
                         final_boss_balas.remove(fb)
@@ -448,6 +467,15 @@ class Juego:
                     self.recursos.player_image,
                     (personaje.Personaje.player.x, personaje.Personaje.player.y)
                 )
+
+                if escudo_activo:
+                    pygame.draw.circle(
+                        self.ventana,
+                        (120, 180, 255),
+                        personaje.Personaje.player.center,
+                        max(personaje.Personaje.player.width, personaje.Personaje.player.height) // 2 + 12,
+                        3
+                    )
 
             for meteor in meteoritos.meteors:
                 self.ventana.blit(self.recursos.meteor_image, (meteor.x, meteor.y))

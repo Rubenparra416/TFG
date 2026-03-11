@@ -249,7 +249,6 @@ class Juego:
                 text_rect = pausa_text.get_rect(center=(variables.ANCHO // 2, variables.ALTO // 2))
                 self.ventana.blit(pausa_text, text_rect)
 
-                self.powerups.draw_debug_count(self.ventana, variables.font)
                 pygame.display.flip()
                 continue
 
@@ -549,5 +548,4 @@ class Juego:
                 )
                 self.ventana.blit(final_boss_text, (10, 220))
 
-            self.powerups.draw_debug_count(self.ventana, variables.font)
             pygame.display.flip()
